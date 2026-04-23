@@ -3,7 +3,7 @@ import copy
 import pytest
 
 from app.core.exceptions import ApiException
-from app.ia.util.workflow_validator import WorkflowJsonValidator
+from app.modules.workflow_generator.domain.models import WorkflowJsonValidator
 
 
 def valid_workflow() -> dict:

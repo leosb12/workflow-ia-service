@@ -1,0 +1,1 @@
+"""Form assistant module placeholder."""
