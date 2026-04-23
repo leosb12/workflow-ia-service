@@ -4,6 +4,20 @@ from pydantic import BaseModel, ConfigDict, Field
 
 class TextoAFlujoRequest(BaseModel):
     descripcion: str = Field(min_length=1, max_length=12000)
+    context: "GenerationContext | None" = None
+
+
+class GenerationContextDepartment(BaseModel):
+    id: str
+    nombre: str
+
+    model_config = ConfigDict(extra="forbid")
+
+
+class GenerationContext(BaseModel):
+    departamentos: list[GenerationContextDepartment] = Field(default_factory=list)
+
+    model_config = ConfigDict(extra="forbid")
 
 
 class Policy(BaseModel):
@@ -31,6 +45,11 @@ class WorkflowNode(BaseModel):
     responsible_role_id: str | None = Field(default=None, alias="responsibleRoleId")
     form_id: str | None = Field(default=None, alias="formId")
     decision_criteria: str | None = Field(default=None, alias="decisionCriteria")
+    responsible_type: Literal["department", "initiator"] | None = Field(
+        default=None,
+        alias="responsibleType",
+    )
+    department_hint: str | None = Field(default=None, alias="departmentHint")
 
     model_config = ConfigDict(populate_by_name=True, extra="forbid")
 

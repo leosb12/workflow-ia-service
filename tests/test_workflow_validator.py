@@ -39,6 +39,8 @@ def valid_workflow() -> dict:
                 "name": "Registrar solicitud",
                 "description": "Capturar datos principales",
                 "responsibleRoleId": "role_solicitante",
+                "responsibleType": "department",
+                "departmentHint": "Solicitante",
                 "formId": "form_registro",
             },
             {

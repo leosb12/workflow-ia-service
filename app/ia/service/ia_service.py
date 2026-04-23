@@ -9,7 +9,11 @@ from starlette.status import HTTP_400_BAD_REQUEST, HTTP_502_BAD_GATEWAY
 from app.core.exceptions import ApiException
 from app.ia.client.deepseek_client import DeepSeekClient
 from app.ia.dto.deepseek import DeepSeekMessage
-from app.ia.dto.texto_a_flujo import TextoAFlujoRequest, TextoAFlujoResponse
+from app.ia.dto.texto_a_flujo import (
+    GenerationContext,
+    TextoAFlujoRequest,
+    TextoAFlujoResponse,
+)
 from app.ia.util.workflow_validator import WorkflowJsonValidator
 
 log = logging.getLogger(__name__)
@@ -32,9 +36,10 @@ class IaService:
         request: TextoAFlujoRequest,
     ) -> TextoAFlujoResponse:
         descripcion = self._validar_descripcion(request)
+        context = request.context
 
         try:
-            workflow = await self._generar_workflow_con_reintentos(descripcion)
+            workflow = await self._generar_workflow_con_reintentos(descripcion, context)
         except Exception as exc:
             log.warning(
                 "Fallo la generacion de DeepSeek, se devolvera workflow fallback: %s",
@@ -71,9 +76,10 @@ class IaService:
     async def _generar_workflow_con_reintentos(
         self,
         descripcion: str,
+        context: GenerationContext | None,
     ) -> dict[str, Any]:
         system_prompt = self._construir_system_prompt()
-        user_prompt = self._construir_user_prompt(descripcion)
+        user_prompt = self._construir_user_prompt(descripcion, context)
 
         ultimo_error: Exception | None = None
         ultimo_raw: str = ""
@@ -104,6 +110,7 @@ class IaService:
                 if intento < self.MAX_INTENTOS_IA:
                     user_prompt = self._construir_prompt_reintento(
                         descripcion=descripcion,
+                        context=context,
                         raw_prev=ultimo_raw,
                         error=str(exc),
                         intento=intento + 1,
@@ -210,6 +217,8 @@ class IaService:
                     "name": "Procesar solicitud",
                     "description": objetivo,
                     "responsibleRoleId": "operador",
+                    "responsibleType": "department",
+                    "departmentHint": "Administracion",
                 },
                 {
                     "id": "fin",
@@ -284,7 +293,9 @@ ESTRUCTURA REQUERIDA:
       "description": "string",
       "responsibleRoleId": "string",
       "formId": "string",
-      "decisionCriteria": "string"
+            "decisionCriteria": "string",
+            "responsibleType": "department|initiator",
+            "departmentHint": "string"
     }
   ],
   "transitions": [
@@ -305,7 +316,7 @@ ESTRUCTURA REQUERIDA:
         {
           "id": "string",
           "label": "string",
-          "type": "text|textarea|number|date|select|checkbox|file|boolean",
+                    "type": "text|textarea|number|date|select|file|boolean|email|phone|currency",
           "required": true,
           "options": []
         }
@@ -342,15 +353,20 @@ REGLAS OBLIGATORIAS:
 - Debe existir exactamente 1 nodo start y al menos 1 nodo end
 - Tipos permitidos: start, task, decision, parallel_start, parallel_end, end
 - Todo nodo task debe tener responsibleRoleId valido
+- Todo nodo task debe incluir responsibleType obligatorio: "department" o "initiator"
+- Si responsibleType = "department", incluir departmentHint con el nombre del departamento esperado
+- Si responsibleType = "initiator", NO incluir departmentHint
 - Todo task que capture, revise, valide, evalue, inspeccione, corrija o subsane datos debe tener formId
 - Los nodos start, end, decision, parallel_start y parallel_end no deben tener responsibleRoleId
 - Los nodos start, end, decision, parallel_start y parallel_end no deben tener formId
+- Los nodos start, end, decision, parallel_start y parallel_end no deben tener responsibleType ni departmentHint
 - Omitir responsibleRoleId, formId y decisionCriteria cuando no apliquen
 - No uses null en campos opcionales que no apliquen
 
 3. DECISIONES
 - Todo decision debe tener al menos 2 transiciones salientes
 - Todas las transiciones salientes de decision deben tener condition no nula
+- En decisiones binarias, usar ramas SI y NO (o equivalente) en label y/o condition
 - Las condiciones deben ser claras y mutuamente excluyentes
 - Si la decision depende de datos de formularios, usa nombres consistentes con los field.id
 - Si aplica, incluir decisionCriteria
@@ -375,10 +391,12 @@ REGLAS OBLIGATORIAS:
 - Nunca devolver fields como null, string u objeto
 - Los field.id deben ser unicos globalmente en toda la salida
 - Usa tipos coherentes: boolean para aprobacion/cumplimiento, file para adjuntos/fotos/planos/evidencias, textarea para observaciones o texto largo
+- Si la actividad requiere captura o revision de informacion, crear al menos 2 campos de formulario utiles
 
 7. ROLES
 - Reutiliza roles
 - No crees roles duplicados o innecesarios
+- Los nombres de rol deben ser concretos y alineados al dominio (ej: Solicitante, Mesa de Entrada, Administracion, Finanzas, RRHH)
 
 8. BUSINESS RULES
 - Incluir solo si la descripcion menciona reglas explicitas
@@ -401,21 +419,48 @@ REGLAS OBLIGATORIAS:
 - Usa el menor numero de nodos posible sin perder logica
 - Mantiene nombres y textos en espanol claro
 - Usa ids unicos en snake_case, sin espacios ni acentos
+- Evita loops innecesarios; si hay subsanacion, modela una rama de retorno explicita con condicion
 
 OBJETIVO DE CALIDAD:
-Genera un workflow compacto, consistente, validable y apto para ser consumido por un backend.
+Genera un workflow compacto, consistente, validable y apto para ser consumido por un backend y por un frontend con swimlanes por departamento.
 """.strip()
 
-    def _construir_user_prompt(self, descripcion: str) -> str:
+    def _construir_user_prompt(
+        self,
+        descripcion: str,
+        context: GenerationContext | None,
+    ) -> str:
+        context_block = self._construir_contexto_prompt(context)
+
         return f"""
 Genera el workflow completo a partir de esta descripcion:
 
 {descripcion}
+
+{context_block}
 """.strip()
+
+    def _construir_contexto_prompt(self, context: GenerationContext | None) -> str:
+        if not context or not context.departamentos:
+            return "Contexto adicional: no se recibieron departamentos del frontend."
+
+        lines = [
+            "Contexto del frontend (departamentos disponibles):",
+        ]
+
+        for departamento in context.departamentos:
+            lines.append(f"- {departamento.nombre} (id: {departamento.id})")
+
+        lines.append(
+            "Regla: en nodos task con responsibleType=department, usa departmentHint coherente con esta lista."
+        )
+
+        return "\n".join(lines)
 
     def _construir_prompt_reintento(
         self,
         descripcion: str,
+        context: GenerationContext | None,
         raw_prev: str,
         error: str,
         intento: int,
@@ -441,4 +486,6 @@ Salida previa:
 Corrige completamente la salida y devuelve un unico JSON final valido para esta descripcion:
 
 {descripcion}
+
+{self._construir_contexto_prompt(context)}
 """.strip()

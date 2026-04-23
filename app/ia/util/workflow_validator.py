@@ -8,6 +8,7 @@ from app.core.exceptions import ApiException
 class WorkflowJsonValidator:
     NODE_TYPES = {"start", "task", "decision", "parallel_start", "parallel_end", "end"}
     FIELD_TYPES = {"text", "textarea", "number", "date", "boolean", "select", "file", "email", "phone", "currency"}
+    RESPONSIBLE_TYPES = {"department", "initiator"}
 
     def validate(self, workflow: dict[str, Any]) -> None:
         if not isinstance(workflow, dict) or not workflow:
@@ -72,6 +73,22 @@ class WorkflowJsonValidator:
                 responsible_role_id = self._require_text(node, "responsibleRoleId", path)
                 if responsible_role_id not in role_ids:
                     self._invalid(f"El responsable del nodo {node_id} no existe en roles: {responsible_role_id}")
+
+                responsible_type = self._optional_text(node, "responsibleType")
+                if responsible_type is None:
+                    self._invalid(f"El nodo task {node_id} debe incluir responsibleType")
+
+                if responsible_type not in self.RESPONSIBLE_TYPES:
+                    self._invalid(
+                        f"El nodo task {node_id} tiene responsibleType invalido: {responsible_type}"
+                    )
+
+                if responsible_type == "department":
+                    department_hint = self._optional_text(node, "departmentHint")
+                    if not department_hint:
+                        self._invalid(
+                            f"El nodo task {node_id} con responsibleType=department debe incluir departmentHint"
+                        )
 
         if not has_start:
             self._invalid("Debe existir al menos un nodo start")
