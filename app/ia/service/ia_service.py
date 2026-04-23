@@ -381,10 +381,13 @@ REGLAS OBLIGATORIAS:
 - Todo nodo task debe incluir responsibleType obligatorio: "department" o "initiator"
 - Si responsibleType = "department", incluir departmentHint con el nombre del departamento esperado
 - Si responsibleType = "initiator", NO incluir departmentHint
-- Usa responsibleType = "initiator" unica y exclusivamente cuando la tarea consista en pedir al cliente o solicitante un dato, respuesta, declaracion o documento que solo esa persona conoce, posee o puede confirmar
-- No uses responsibleType = "initiator" para validaciones, revisiones, aprobaciones, controles, registros, derivaciones o decisiones internas
+- Usa responsibleType = "initiator" unica y exclusivamente cuando la tarea consista en pedir al cliente o solicitante un dato, respuesta, declaracion o documento que solo esa persona conoce, posee o puede confirmar y que ninguna otra area puede completar por si misma
+- NUNCA uses responsibleType = "initiator" para tareas de validacion de datos, revision, aprobacion, control, registro, derivacion, evaluacion, verificacion, analisis, decision o gestion interna
 - Si un area interna revisa, valida o decide sobre informacion, el responsable es ese departamento aunque el dato original venga del cliente
-- Evita asignar por defecto "quien inicio el tramite"; si hay duda entre iniciador y departamento, prioriza el departamento que ejecuta la accion
+- Si la accion la ejecuta RRHH, Finanzas, Administracion, Mesa de Entrada o cualquier otra area interna, entonces responsibleType debe ser "department", no "initiator"
+- Regla de desempate obligatoria: si hay duda entre initiator y department, elige siempre "department"
+- Ejemplo obligatorio: "RRHH valida datos del legajo" => responsibleType="department", departmentHint="RRHH". Nunca asignar eso al cliente o a quien inicio el tramite
+- Ejemplo obligatorio: "Solicitar al cliente su numero de cuenta" o "pedir documentacion faltante que solo posee el cliente" => responsibleType="initiator"
 - responsibleRoleId debe corresponder al rol mas apropiado para la tarea; si el rol representa el area humana, reutilizalo sin duplicar departamentos
 - Todo task que capture, revise, valide, evalue, inspeccione, corrija o subsane datos debe tener formId
 - Los nodos start, end, decision, parallel_start y parallel_end no deben tener responsibleRoleId
@@ -506,7 +509,7 @@ No uses markdown.
 No uses comentarios.
 No agregues explicaciones.
 Prioriza validez estructural, consistencia de ids y cumplimiento de reglas UML.
-Recuerda: usa responsibleType = "initiator" solo cuando se le pide al cliente o solicitante un dato o documento que solo esa persona puede aportar; revisiones, validaciones y aprobaciones internas corresponden al departamento responsable.
+Recuerda esta regla estricta: responsibleType = "initiator" solo aplica cuando se pide al cliente o solicitante informacion o documentacion que solo esa persona puede aportar. Si la tarea dice validar, revisar, verificar, aprobar, analizar, registrar, derivar o decidir, entonces NUNCA es initiator y SIEMPRE corresponde a un department. Ejemplo obligatorio: si RRHH valida datos, el responsable es RRHH, no el usuario final.
 
 Error detectado:
 {error}
