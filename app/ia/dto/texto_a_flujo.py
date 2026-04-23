@@ -37,6 +37,15 @@ class Role(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
 
+class WorkflowDepartment(BaseModel):
+    id: str
+    name: str
+    description: str | None = None
+    aliases: list[str] = Field(default_factory=list)
+
+    model_config = ConfigDict(extra="forbid")
+
+
 class WorkflowNode(BaseModel):
     id: str
     type: Literal["start", "task", "decision", "parallel_start", "parallel_end", "end"]
@@ -116,6 +125,7 @@ class Analysis(BaseModel):
 
 class TextoAFlujoResponse(BaseModel):
     policy: Policy
+    departments: list[WorkflowDepartment] = Field(default_factory=list)
     roles: list[Role]
     nodes: list[WorkflowNode]
     transitions: list[Transition]

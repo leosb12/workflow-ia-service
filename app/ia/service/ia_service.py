@@ -197,6 +197,14 @@ class IaService:
                 "objective": objetivo,
                 "version": "1.0",
             },
+            "departments": [
+                {
+                    "id": "administracion",
+                    "name": "Administracion",
+                    "description": "Departamento generico de contingencia",
+                    "aliases": ["administración"],
+                }
+            ],
             "roles": [
                 {
                     "id": "operador",
@@ -267,7 +275,7 @@ No uses comentarios.
 No escribas texto antes ni despues del JSON.
 
 La salida debe tener EXACTAMENTE estas claves de primer nivel:
-policy, roles, nodes, transitions, forms, businessRules, analysis
+policy, departments, roles, nodes, transitions, forms, businessRules, analysis
 
 ESTRUCTURA REQUERIDA:
 
@@ -278,6 +286,14 @@ ESTRUCTURA REQUERIDA:
     "objective": "string",
     "version": "1.0"
   },
+    "departments": [
+        {
+            "id": "string",
+            "name": "string",
+            "description": "string",
+            "aliases": []
+        }
+    ],
   "roles": [
     {
       "id": "string",
@@ -347,7 +363,16 @@ REGLAS OBLIGATORIAS:
 - El primer caracter de la respuesta debe ser {
 - El JSON debe ser valido
 - Todas las claves de primer nivel deben existir siempre
-- Usa arrays vacios si no hay forms, businessRules, assumptions o warnings
+- Usa arrays vacios si no hay departments, forms, businessRules, assumptions o warnings
+
+1.1 DEPARTAMENTOS
+- Identifica todos los departamentos necesarios a partir de la descripcion
+- Reutiliza nombres de departamentos cuando coincidan o sean muy parecidos a los ya existentes en el contexto del frontend
+- Si el contexto incluye departamentos existentes, preferir match por similitud semantica antes de proponer uno nuevo
+- Si un departamento no existe en el contexto y es necesario para el workflow, incluyelo en departments
+- Mantener nombres de departamento en espanol claro y breve: solicitante, admision, aprobador, finanzas, rrhh, control, etc.
+- Usa ids unicos en snake_case para los departamentos
+- Incluye aliases solo si ayudan a reconocer sinonimos o nombres parecidos
 
 2. NODOS
 - Debe existir exactamente 1 nodo start y al menos 1 nodo end
@@ -356,6 +381,7 @@ REGLAS OBLIGATORIAS:
 - Todo nodo task debe incluir responsibleType obligatorio: "department" o "initiator"
 - Si responsibleType = "department", incluir departmentHint con el nombre del departamento esperado
 - Si responsibleType = "initiator", NO incluir departmentHint
+- responsibleRoleId debe corresponder al rol mas apropiado para la tarea; si el rol representa el area humana, reutilizalo sin duplicar departamentos
 - Todo task que capture, revise, valide, evalue, inspeccione, corrija o subsane datos debe tener formId
 - Los nodos start, end, decision, parallel_start y parallel_end no deben tener responsibleRoleId
 - Los nodos start, end, decision, parallel_start y parallel_end no deben tener formId

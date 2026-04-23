@@ -15,6 +15,7 @@ class WorkflowJsonValidator:
             self._invalid("El workflow generado no puede estar vacio")
 
         self._require_object(workflow, "policy")
+        departments = self._optional_array(workflow, "departments")
         roles = self._require_array(workflow, "roles", non_empty=True)
         nodes = self._require_array(workflow, "nodes", non_empty=True)
         transitions = self._require_array(workflow, "transitions", non_empty=True)
@@ -23,10 +24,29 @@ class WorkflowJsonValidator:
         self._require_object(workflow, "analysis")
 
         role_ids = self._validate_roles(roles)
+        self._validate_departments(departments)
         node_types = self._validate_nodes(nodes, role_ids)
         self._validate_transitions(transitions, node_types)
         self._validate_forms(forms, node_types)
         self._validate_business_rules(business_rules, node_types)
+
+    def _validate_departments(self, departments: list[Any]) -> None:
+        department_ids: set[str] = set()
+
+        for index, department in enumerate(departments):
+            if not isinstance(department, dict):
+                self._invalid(f"El departamento en posicion {index} debe ser un objeto")
+
+            path = f"departments[{index}]"
+            department_id = self._require_text(department, "id", path)
+            department_name = self._require_text(department, "name", path)
+
+            if department_id in department_ids:
+                self._invalid(f"Id de departamento duplicado: {department_id}")
+            department_ids.add(department_id)
+
+            if len(department_name) < 2:
+                self._invalid(f"El departamento {department_id} debe tener un nombre mas descriptivo")
 
     def _validate_roles(self, roles: list[Any]) -> set[str]:
         role_ids: set[str] = set()
@@ -204,6 +224,16 @@ class WorkflowJsonValidator:
 
         if non_empty and not value:
             self._invalid(f"El campo {field} no puede estar vacio")
+
+        return value
+
+    def _optional_array(self, parent: dict[str, Any], field: str) -> list[Any]:
+        value = parent.get(field)
+        if value is None:
+            return []
+
+        if not isinstance(value, list):
+            self._invalid(f"El campo {field} debe ser un arreglo")
 
         return value
 
