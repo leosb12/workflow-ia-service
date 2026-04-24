@@ -4,6 +4,7 @@ from app.core.config import get_settings
 from app.core.exceptions import register_exception_handlers
 from app.core.logging import configure_logging
 from app.core.security import configure_security
+from app.modules.form_assistant.controller import router as form_assistant_router
 from app.modules.workflow_generator.controller import router as workflow_generator_router
 
 
@@ -20,6 +21,7 @@ def create_app() -> FastAPI:
     configure_security(app)
     register_exception_handlers(app)
     app.include_router(workflow_generator_router)
+    app.include_router(form_assistant_router)
 
     @app.get("/health", tags=["health"])
     async def health() -> dict[str, str]:
