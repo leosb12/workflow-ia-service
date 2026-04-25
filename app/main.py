@@ -4,11 +4,11 @@ from app.core.config import get_settings
 from app.core.exceptions import register_exception_handlers
 from app.core.logging import configure_logging
 from app.core.security import configure_security
-from app.modules.analytics_ai.controller import router as analytics_ai_router
-from app.modules.form_assistant.controller import router as form_assistant_router
-from app.modules.simulations_ai.controller import router as simulations_ai_router
-from app.modules.user_guide.controller import router as user_guide_router
-from app.modules.workflow_generator.controller import router as workflow_generator_router
+from app.modules.analitica.controlador import router as router_analitica
+from app.modules.asistente_formularios.controlador import router as router_asistente_formularios
+from app.modules.simulacion.controlador import router as router_simulacion
+from app.modules.guia_usuario.controlador import router as router_guia_usuario
+from app.modules.generador_flujos.controlador import router as router_generador_flujos
 
 
 def create_app() -> FastAPI:
@@ -23,11 +23,11 @@ def create_app() -> FastAPI:
 
     configure_security(app)
     register_exception_handlers(app)
-    app.include_router(workflow_generator_router)
-    app.include_router(form_assistant_router)
-    app.include_router(analytics_ai_router)
-    app.include_router(simulations_ai_router)
-    app.include_router(user_guide_router)
+    app.include_router(router_generador_flujos)
+    app.include_router(router_asistente_formularios)
+    app.include_router(router_analitica)
+    app.include_router(router_simulacion)
+    app.include_router(router_guia_usuario)
 
     @app.get("/health", tags=["health"])
     async def health() -> dict[str, str]:

@@ -1,4 +1,4 @@
-from app.modules.workflow_generator.schemas import (
+from app.modules.generador_flujos.modelos import (
     Analysis,
     BusinessRule,
     FormField,

@@ -1,3 +1,5 @@
-from app.modules.workflow_generator.domain.models import WorkflowJsonValidator
+from app.modules.generador_flujos.dominio.validador_json_flujo import ValidadorJsonFlujo
 
-__all__ = ["WorkflowJsonValidator"]
+WorkflowJsonValidator = ValidadorJsonFlujo
+
+__all__ = ["ValidadorJsonFlujo", "WorkflowJsonValidator"]

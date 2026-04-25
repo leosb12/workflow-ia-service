@@ -1,0 +1,369 @@
+{
+  "info": {
+    "name": "ia-service",
+    "_postman_id": "6f0d1a70-0a56-4ae6-b0f1-ia-service-local",
+    "description": "Coleccion de pruebas para todos los endpoints publicos del microservicio ia-service.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://127.0.0.1:8000"
+    }
+  ],
+  "item": [
+    {
+      "name": "Utilidades",
+      "item": [
+        {
+          "name": "Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "health"
+              ]
+            }
+          }
+        },
+        {
+          "name": "OpenAPI",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/openapi.json",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "openapi.json"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Docs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/docs",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "docs"
+              ]
+            }
+          }
+        },
+        {
+          "name": "ReDoc",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/redoc",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "redoc"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "IA",
+      "item": [
+        {
+          "name": "Texto a flujo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"descripcion\": \"Crear un flujo para aprobar solicitudes de instalacion de medidor\",\n  \"context\": {\n    \"departamentos\": [\n      {\n        \"id\": \"tecnico\",\n        \"nombre\": \"Tecnico\"\n      },\n      {\n        \"id\": \"legal\",\n        \"nombre\": \"Legal\"\n      }\n    ]\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/ia/texto-a-flujo",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "ia",
+                "texto-a-flujo"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Forms fill",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"activityId\": \"task_legal_1\",\n  \"activityName\": \"Revision legal\",\n  \"policyName\": \"Instalacion de medidor\",\n  \"formSchema\": [\n    {\n      \"id\": \"decision\",\n      \"label\": \"Decision\",\n      \"type\": \"select\",\n      \"required\": true,\n      \"options\": [\n        \"aprobado\",\n        \"rechazado\",\n        \"observado\"\n      ]\n    },\n    {\n      \"id\": \"observations\",\n      \"label\": \"Observaciones\",\n      \"type\": \"textarea\",\n      \"required\": false,\n      \"options\": []\n    },\n    {\n      \"id\": \"requiresDocuments\",\n      \"label\": \"Requiere documentos adicionales\",\n      \"type\": \"boolean\",\n      \"required\": false,\n      \"options\": []\n    }\n  ],\n  \"currentValues\": {\n    \"decision\": null,\n    \"observations\": \"\",\n    \"requiresDocuments\": null\n  },\n  \"userPrompt\": \"Rechaza la solicitud y pon una explicacion de que faltan documentos legales.\",\n  \"context\": {\n    \"tramiteId\": \"tramite_001\",\n    \"currentDepartment\": \"Legal\",\n    \"userRole\": \"funcionario\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/ia/forms/fill",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "ia",
+                "forms",
+                "fill"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Analytics bottlenecks",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"general\": {\n    \"totalPolicies\": 10,\n    \"activePolicies\": 6,\n    \"totalInstances\": 120,\n    \"inProgressInstances\": 40,\n    \"completedInstances\": 70,\n    \"rejectedInstances\": 10,\n    \"pendingTasks\": 25,\n    \"completedTasks\": 180,\n    \"averageResolutionTimeHours\": 18.5,\n    \"hasEnoughResolutionTimeData\": true\n  },\n  \"attentionTimes\": {\n    \"averageByPolicy\": [\n      {\n        \"policyId\": \"pol-1\",\n        \"policyName\": \"Solicitud de Credito\",\n        \"averageHours\": 20.4,\n        \"completedInstances\": 15\n      }\n    ],\n    \"averageByNode\": [\n      {\n        \"nodeId\": \"node-1\",\n        \"nodeName\": \"Revision documental\",\n        \"averageHours\": 8.2,\n        \"completedTasks\": 30\n      }\n    ],\n    \"averageByDepartment\": [\n      {\n        \"departmentId\": \"dep-1\",\n        \"departmentName\": \"Legal\",\n        \"averageHours\": 12.5,\n        \"completedTasks\": 20\n      }\n    ],\n    \"averageByOfficial\": [\n      {\n        \"officialId\": \"user-1\",\n        \"officialName\": \"Juan Perez\",\n        \"averageHours\": 6.3,\n        \"completedTasks\": 12\n      },\n      {\n        \"officialId\": \"user-2\",\n        \"officialName\": \"Ana Gomez\",\n        \"averageHours\": 3.1,\n        \"completedTasks\": 20\n      }\n    ],\n    \"slowestActivity\": {\n      \"nodeId\": \"node-1\",\n      \"nodeName\": \"Revision documental\",\n      \"averageHours\": 8.2\n    },\n    \"fastestActivity\": {\n      \"nodeId\": \"node-2\",\n      \"nodeName\": \"Registro inicial\",\n      \"averageHours\": 1.4\n    },\n    \"hasEnoughData\": true\n  },\n  \"taskAccumulation\": {\n    \"pendingByOfficial\": [\n      {\n        \"officialId\": \"user-1\",\n        \"officialName\": \"Juan Perez\",\n        \"pendingTasks\": 8,\n        \"oldestTaskAgeHours\": 36\n      },\n      {\n        \"officialId\": \"user-2\",\n        \"officialName\": \"Ana Gomez\",\n        \"pendingTasks\": 2,\n        \"oldestTaskAgeHours\": 8\n      }\n    ],\n    \"pendingByDepartment\": [\n      {\n        \"departmentId\": \"dep-1\",\n        \"departmentName\": \"Legal\",\n        \"pendingTasks\": 15,\n        \"oldestTaskAgeHours\": 48\n      }\n    ],\n    \"pendingByPolicy\": [\n      {\n        \"policyId\": \"pol-1\",\n        \"policyName\": \"Solicitud de Credito\",\n        \"pendingTasks\": 10,\n        \"oldestTaskAgeHours\": 30\n      }\n    ],\n    \"pendingByNode\": [\n      {\n        \"nodeId\": \"node-1\",\n        \"nodeName\": \"Revision documental\",\n        \"pendingTasks\": 7,\n        \"oldestTaskAgeHours\": 22\n      }\n    ],\n    \"oldestPendingTasks\": [\n      {\n        \"taskId\": \"task-1\",\n        \"policyName\": \"Solicitud de Credito\",\n        \"nodeName\": \"Revision documental\",\n        \"assignedToName\": \"Juan Perez\",\n        \"departmentName\": \"Legal\",\n        \"ageHours\": 48,\n        \"createdAt\": \"2026-04-23T10:00:00\"\n      }\n    ]\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/ia/analytics/bottlenecks",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "ia",
+                "analytics",
+                "bottlenecks"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Analytics task redistribution",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"general\": {\n    \"totalPolicies\": 10,\n    \"activePolicies\": 6,\n    \"totalInstances\": 120,\n    \"inProgressInstances\": 40,\n    \"completedInstances\": 70,\n    \"rejectedInstances\": 10,\n    \"pendingTasks\": 25,\n    \"completedTasks\": 180,\n    \"averageResolutionTimeHours\": 18.5,\n    \"hasEnoughResolutionTimeData\": true\n  },\n  \"attentionTimes\": {\n    \"averageByPolicy\": [\n      {\n        \"policyId\": \"pol-1\",\n        \"policyName\": \"Solicitud de Credito\",\n        \"averageHours\": 20.4,\n        \"completedInstances\": 15\n      }\n    ],\n    \"averageByNode\": [\n      {\n        \"nodeId\": \"node-1\",\n        \"nodeName\": \"Revision documental\",\n        \"averageHours\": 8.2,\n        \"completedTasks\": 30\n      }\n    ],\n    \"averageByDepartment\": [\n      {\n        \"departmentId\": \"dep-1\",\n        \"departmentName\": \"Legal\",\n        \"averageHours\": 12.5,\n        \"completedTasks\": 20\n      }\n    ],\n    \"averageByOfficial\": [\n      {\n        \"officialId\": \"user-1\",\n        \"officialName\": \"Juan Perez\",\n        \"averageHours\": 6.3,\n        \"completedTasks\": 12\n      },\n      {\n        \"officialId\": \"user-2\",\n        \"officialName\": \"Ana Gomez\",\n        \"averageHours\": 3.1,\n        \"completedTasks\": 20\n      }\n    ],\n    \"slowestActivity\": {\n      \"nodeId\": \"node-1\",\n      \"nodeName\": \"Revision documental\",\n      \"averageHours\": 8.2\n    },\n    \"fastestActivity\": {\n      \"nodeId\": \"node-2\",\n      \"nodeName\": \"Registro inicial\",\n      \"averageHours\": 1.4\n    },\n    \"hasEnoughData\": true\n  },\n  \"taskAccumulation\": {\n    \"pendingByOfficial\": [\n      {\n        \"officialId\": \"user-1\",\n        \"officialName\": \"Juan Perez\",\n        \"pendingTasks\": 8,\n        \"oldestTaskAgeHours\": 36\n      },\n      {\n        \"officialId\": \"user-2\",\n        \"officialName\": \"Ana Gomez\",\n        \"pendingTasks\": 2,\n        \"oldestTaskAgeHours\": 8\n      }\n    ],\n    \"pendingByDepartment\": [\n      {\n        \"departmentId\": \"dep-1\",\n        \"departmentName\": \"Legal\",\n        \"pendingTasks\": 15,\n        \"oldestTaskAgeHours\": 48\n      }\n    ],\n    \"pendingByPolicy\": [\n      {\n        \"policyId\": \"pol-1\",\n        \"policyName\": \"Solicitud de Credito\",\n        \"pendingTasks\": 10,\n        \"oldestTaskAgeHours\": 30\n      }\n    ],\n    \"pendingByNode\": [\n      {\n        \"nodeId\": \"node-1\",\n        \"nodeName\": \"Revision documental\",\n        \"pendingTasks\": 7,\n        \"oldestTaskAgeHours\": 22\n      }\n    ],\n    \"oldestPendingTasks\": [\n      {\n        \"taskId\": \"task-1\",\n        \"policyName\": \"Solicitud de Credito\",\n        \"nodeName\": \"Revision documental\",\n        \"assignedToName\": \"Juan Perez\",\n        \"departmentName\": \"Legal\",\n        \"ageHours\": 48,\n        \"createdAt\": \"2026-04-23T10:00:00\"\n      }\n    ]\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/ia/analytics/task-redistribution",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "ia",
+                "analytics",
+                "task-redistribution"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Analytics policy improvement",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"policyId\": \"pol-1\",\n  \"policyName\": \"Solicitud de Credito\",\n  \"workflowStructure\": {\n    \"nodes\": [\n      {\n        \"id\": \"node-1\",\n        \"name\": \"Revision documental\",\n        \"type\": \"task\"\n      },\n      {\n        \"id\": \"node-2\",\n        \"name\": \"Registro inicial\",\n        \"type\": \"task\"\n      }\n    ],\n    \"transitions\": [\n      {\n        \"id\": \"tr-1\",\n        \"from\": \"node-2\",\n        \"to\": \"node-1\",\n        \"label\": \"Enviar a revision\"\n      }\n    ]\n  },\n  \"dashboard\": {\n    \"general\": {\n      \"totalPolicies\": 10,\n      \"activePolicies\": 6,\n      \"totalInstances\": 120,\n      \"inProgressInstances\": 40,\n      \"completedInstances\": 70,\n      \"rejectedInstances\": 10,\n      \"pendingTasks\": 25,\n      \"completedTasks\": 180,\n      \"averageResolutionTimeHours\": 18.5,\n      \"hasEnoughResolutionTimeData\": true\n    },\n    \"attentionTimes\": {\n      \"averageByPolicy\": [\n        {\n          \"policyId\": \"pol-1\",\n          \"policyName\": \"Solicitud de Credito\",\n          \"averageHours\": 20.4,\n          \"completedInstances\": 15\n        }\n      ],\n      \"averageByNode\": [\n        {\n          \"nodeId\": \"node-1\",\n          \"nodeName\": \"Revision documental\",\n          \"averageHours\": 8.2,\n          \"completedTasks\": 30\n        }\n      ],\n      \"averageByDepartment\": [\n        {\n          \"departmentId\": \"dep-1\",\n          \"departmentName\": \"Legal\",\n          \"averageHours\": 12.5,\n          \"completedTasks\": 20\n        }\n      ],\n      \"averageByOfficial\": [\n        {\n          \"officialId\": \"user-1\",\n          \"officialName\": \"Juan Perez\",\n          \"averageHours\": 6.3,\n          \"completedTasks\": 12\n        },\n        {\n          \"officialId\": \"user-2\",\n          \"officialName\": \"Ana Gomez\",\n          \"averageHours\": 3.1,\n          \"completedTasks\": 20\n        }\n      ],\n      \"slowestActivity\": {\n        \"nodeId\": \"node-1\",\n        \"nodeName\": \"Revision documental\",\n        \"averageHours\": 8.2\n      },\n      \"fastestActivity\": {\n        \"nodeId\": \"node-2\",\n        \"nodeName\": \"Registro inicial\",\n        \"averageHours\": 1.4\n      },\n      \"hasEnoughData\": true\n    },\n    \"taskAccumulation\": {\n      \"pendingByOfficial\": [\n        {\n          \"officialId\": \"user-1\",\n          \"officialName\": \"Juan Perez\",\n          \"pendingTasks\": 8,\n          \"oldestTaskAgeHours\": 36\n        },\n        {\n          \"officialId\": \"user-2\",\n          \"officialName\": \"Ana Gomez\",\n          \"pendingTasks\": 2,\n          \"oldestTaskAgeHours\": 8\n        }\n      ],\n      \"pendingByDepartment\": [\n        {\n          \"departmentId\": \"dep-1\",\n          \"departmentName\": \"Legal\",\n          \"pendingTasks\": 15,\n          \"oldestTaskAgeHours\": 48\n        }\n      ],\n      \"pendingByPolicy\": [\n        {\n          \"policyId\": \"pol-1\",\n          \"policyName\": \"Solicitud de Credito\",\n          \"pendingTasks\": 10,\n          \"oldestTaskAgeHours\": 30\n        }\n      ],\n      \"pendingByNode\": [\n        {\n          \"nodeId\": \"node-1\",\n          \"nodeName\": \"Revision documental\",\n          \"pendingTasks\": 7,\n          \"oldestTaskAgeHours\": 22\n        }\n      ],\n      \"oldestPendingTasks\": [\n        {\n          \"taskId\": \"task-1\",\n          \"policyName\": \"Solicitud de Credito\",\n          \"nodeName\": \"Revision documental\",\n          \"assignedToName\": \"Juan Perez\",\n          \"departmentName\": \"Legal\",\n          \"ageHours\": 48,\n          \"createdAt\": \"2026-04-23T10:00:00\"\n        }\n      ]\n    }\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/ia/analytics/policy-improvement",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "ia",
+                "analytics",
+                "policy-improvement"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Analytics intelligent summary",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"general\": {\n    \"totalPolicies\": 10,\n    \"activePolicies\": 6,\n    \"totalInstances\": 120,\n    \"inProgressInstances\": 40,\n    \"completedInstances\": 70,\n    \"rejectedInstances\": 10,\n    \"pendingTasks\": 25,\n    \"completedTasks\": 180,\n    \"averageResolutionTimeHours\": 18.5,\n    \"hasEnoughResolutionTimeData\": true\n  },\n  \"attentionTimes\": {\n    \"averageByPolicy\": [\n      {\n        \"policyId\": \"pol-1\",\n        \"policyName\": \"Solicitud de Credito\",\n        \"averageHours\": 20.4,\n        \"completedInstances\": 15\n      }\n    ],\n    \"averageByNode\": [\n      {\n        \"nodeId\": \"node-1\",\n        \"nodeName\": \"Revision documental\",\n        \"averageHours\": 8.2,\n        \"completedTasks\": 30\n      }\n    ],\n    \"averageByDepartment\": [\n      {\n        \"departmentId\": \"dep-1\",\n        \"departmentName\": \"Legal\",\n        \"averageHours\": 12.5,\n        \"completedTasks\": 20\n      }\n    ],\n    \"averageByOfficial\": [\n      {\n        \"officialId\": \"user-1\",\n        \"officialName\": \"Juan Perez\",\n        \"averageHours\": 6.3,\n        \"completedTasks\": 12\n      },\n      {\n        \"officialId\": \"user-2\",\n        \"officialName\": \"Ana Gomez\",\n        \"averageHours\": 3.1,\n        \"completedTasks\": 20\n      }\n    ],\n    \"slowestActivity\": {\n      \"nodeId\": \"node-1\",\n      \"nodeName\": \"Revision documental\",\n      \"averageHours\": 8.2\n    },\n    \"fastestActivity\": {\n      \"nodeId\": \"node-2\",\n      \"nodeName\": \"Registro inicial\",\n      \"averageHours\": 1.4\n    },\n    \"hasEnoughData\": true\n  },\n  \"taskAccumulation\": {\n    \"pendingByOfficial\": [\n      {\n        \"officialId\": \"user-1\",\n        \"officialName\": \"Juan Perez\",\n        \"pendingTasks\": 8,\n        \"oldestTaskAgeHours\": 36\n      },\n      {\n        \"officialId\": \"user-2\",\n        \"officialName\": \"Ana Gomez\",\n        \"pendingTasks\": 2,\n        \"oldestTaskAgeHours\": 8\n      }\n    ],\n    \"pendingByDepartment\": [\n      {\n        \"departmentId\": \"dep-1\",\n        \"departmentName\": \"Legal\",\n        \"pendingTasks\": 15,\n        \"oldestTaskAgeHours\": 48\n      }\n    ],\n    \"pendingByPolicy\": [\n      {\n        \"policyId\": \"pol-1\",\n        \"policyName\": \"Solicitud de Credito\",\n        \"pendingTasks\": 10,\n        \"oldestTaskAgeHours\": 30\n      }\n    ],\n    \"pendingByNode\": [\n      {\n        \"nodeId\": \"node-1\",\n        \"nodeName\": \"Revision documental\",\n        \"pendingTasks\": 7,\n        \"oldestTaskAgeHours\": 22\n      }\n    ],\n    \"oldestPendingTasks\": [\n      {\n        \"taskId\": \"task-1\",\n        \"policyName\": \"Solicitud de Credito\",\n        \"nodeName\": \"Revision documental\",\n        \"assignedToName\": \"Juan Perez\",\n        \"departmentName\": \"Legal\",\n        \"ageHours\": 48,\n        \"createdAt\": \"2026-04-23T10:00:00\"\n      }\n    ]\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/ia/analytics/intelligent-summary",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "ia",
+                "analytics",
+                "intelligent-summary"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Simulations analyze",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"policy\": {\n    \"id\": \"policy-1\",\n    \"nombre\": \"Política A\"\n  },\n  \"configuration\": {\n    \"instances\": 100,\n    \"baseNodeDurationHours\": 2,\n    \"variabilityPercent\": 20,\n    \"includeAiAnalysis\": true,\n    \"randomSeed\": 42\n  },\n  \"result\": {\n    \"instancesSimulated\": 100,\n    \"totalEstimatedTimeHours\": 430.5,\n    \"averageEstimatedTimeHours\": 4.31,\n    \"highestLoadNodeId\": \"node-3\",\n    \"highestLoadNodeName\": \"Revisión documental\",\n    \"highestLoadPercentage\": 38.5,\n    \"bottleneckNodeIds\": [\n      \"node-3\",\n      \"node-5\"\n    ],\n    \"bottleneckNodeNames\": [\n      \"Revisión documental\",\n      \"Aprobación final\"\n    ],\n    \"nodeStats\": [\n      {\n        \"nodeId\": \"node-3\",\n        \"nodeName\": \"Revisión documental\",\n        \"nodeType\": \"ACTIVIDAD\",\n        \"executions\": 100,\n        \"totalEstimatedTimeHours\": 180,\n        \"averageEstimatedTimeHours\": 1.8,\n        \"loadPercentage\": 38.5,\n        \"bottleneck\": true\n      }\n    ],\n    \"decisionStats\": [\n      {\n        \"nodeId\": \"node-4\",\n        \"nodeName\": \"Validar monto\",\n        \"totalDecisions\": 100,\n        \"outcomes\": {\n          \"Aprobado (node-5)\": 80,\n          \"Observado (node-6)\": 20\n        }\n      }\n    ],\n    \"warnings\": []\n  },\n  \"actorId\": \"admin-1\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/ia/simulations/analyze",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "ia",
+                "simulations",
+                "analyze"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Simulations compare",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstPolicy\": {\n    \"id\": \"policy-1\",\n    \"nombre\": \"Política A\"\n  },\n  \"secondPolicy\": {\n    \"id\": \"policy-2\",\n    \"nombre\": \"Política B\"\n  },\n  \"configuration\": {\n    \"instances\": 100,\n    \"baseNodeDurationHours\": 2,\n    \"variabilityPercent\": 20,\n    \"includeAiAnalysis\": true,\n    \"randomSeed\": 42\n  },\n  \"comparison\": {\n    \"firstAverageEstimatedTimeHours\": 4.8,\n    \"secondAverageEstimatedTimeHours\": 3.9,\n    \"firstBottleneckCount\": 3,\n    \"secondBottleneckCount\": 1,\n    \"averageTimeDifferenceHours\": 0.9,\n    \"moreEfficientPolicyId\": \"policy-2\",\n    \"moreEfficientPolicyName\": \"Política B\",\n    \"conclusion\": \"La Política B muestra mejor desempeño general.\"\n  },\n  \"actorId\": \"admin-1\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/ia/simulations/compare",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "ia",
+                "simulations",
+                "compare"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Guide admin",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"admin-1\",\n  \"userName\": \"Administrador Principal\",\n  \"role\": \"ADMIN\",\n  \"screen\": \"POLICY_DESIGNER\",\n  \"question\": \"Que hago aqui?\",\n  \"context\": {\n    \"policyId\": \"pol-1\",\n    \"policyName\": \"Instalacion de medidor\",\n    \"policyStatus\": \"BORRADOR\",\n    \"selectedNode\": {\n      \"id\": \"node-1\",\n      \"type\": \"ACTIVITY\",\n      \"name\": \"Evaluar viabilidad tecnica\",\n      \"department\": \"Departamento Tecnico\",\n      \"responsible\": null,\n      \"responsibleType\": null,\n      \"formFields\": [],\n      \"incomingNodes\": [\n        \"Inicio\"\n      ],\n      \"outgoingNodes\": [\n        \"Decision tecnica\"\n      ]\n    },\n    \"policySummary\": {\n      \"hasStartNode\": true,\n      \"hasEndNode\": false,\n      \"totalActivities\": 5,\n      \"totalDecisions\": 1,\n      \"activitiesWithoutResponsible\": 2,\n      \"activitiesWithoutForm\": 3,\n      \"invalidConnections\": 1,\n      \"decisionsWithoutRoutes\": 1,\n      \"parallelNodesIncomplete\": 0,\n      \"orphanNodes\": 0\n    },\n    \"detectedIssues\": [\n      {\n        \"type\": \"MISSING_END_NODE\",\n        \"message\": \"La politica no tiene nodo final.\"\n      }\n    ],\n    \"availableActions\": [\n      \"ADD_ACTIVITY\",\n      \"ADD_DECISION\",\n      \"ADD_FORM_FIELD\",\n      \"ASSIGN_RESPONSIBLE\",\n      \"CONNECT_NODES\",\n      \"SAVE_POLICY\",\n      \"ACTIVATE_POLICY\"\n    ],\n    \"policyDepartments\": [\n      \"Departamento Tecnico\",\n      \"Atencion al Cliente\"\n    ]\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/ia/guide/admin",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "ia",
+                "guide",
+                "admin"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Guide employee",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"func-1\",\n  \"userName\": \"Funcionario Operativo\",\n  \"role\": \"EMPLOYEE\",\n  \"screen\": \"TASK_FORM\",\n  \"question\": \"Que lleno aqui?\",\n  \"context\": {\n    \"taskId\": \"task-1\",\n    \"instanceId\": \"inst-1\",\n    \"policyId\": \"pol-1\",\n    \"policyName\": \"Instalacion de medidor\",\n    \"currentNode\": {\n      \"id\": \"node-1\",\n      \"type\": \"ACTIVITY\",\n      \"name\": \"Evaluar viabilidad tecnica\",\n      \"description\": \"Validar si tecnicamente se puede instalar el medidor\",\n      \"department\": \"Departamento Tecnico\",\n      \"estimatedTime\": \"48h\"\n    },\n    \"taskStatus\": \"IN_PROGRESS\",\n    \"priority\": \"HIGH\",\n    \"form\": {\n      \"fields\": [\n        {\n          \"name\": \"viable\",\n          \"label\": \"Es viable tecnicamente?\",\n          \"type\": \"BOOLEAN\",\n          \"required\": true,\n          \"value\": null\n        },\n        {\n          \"name\": \"observaciones\",\n          \"label\": \"Observaciones tecnicas\",\n          \"type\": \"TEXTAREA\",\n          \"required\": false,\n          \"value\": \"\"\n        }\n      ],\n      \"missingRequiredFields\": [\n        \"viable\"\n      ]\n    },\n    \"historySummary\": {\n      \"completedSteps\": 2,\n      \"currentStep\": \"Evaluar viabilidad tecnica\",\n      \"pendingSteps\": 3,\n      \"lastCompletedBy\": \"Atencion al Cliente\"\n    },\n    \"nextPossibleSteps\": [\n      {\n        \"condition\": \"Si marcas Si\",\n        \"nextNode\": \"Revision legal\",\n        \"nextDepartment\": \"Legal\"\n      },\n      {\n        \"condition\": \"Si marcas No\",\n        \"nextNode\": \"Rechazo de solicitud\",\n        \"nextDepartment\": \"Atencion al Cliente\"\n      }\n    ],\n    \"dashboardSummary\": {\n      \"pendingTasks\": 3,\n      \"inProgressTasks\": 1,\n      \"completedTasks\": 4,\n      \"overdueTasks\": 1\n    },\n    \"taskQueue\": [\n      {\n        \"taskId\": \"task-1\",\n        \"taskName\": \"Evaluar viabilidad tecnica\",\n        \"taskStatus\": \"OVERDUE\",\n        \"priority\": \"HIGH\",\n        \"ageHours\": 56,\n        \"overdue\": true,\n        \"policyName\": \"Instalacion de medidor\"\n      }\n    ],\n    \"availableActions\": [\n      \"START_TASK\",\n      \"SAVE_FORM\",\n      \"COMPLETE_TASK\",\n      \"ASK_HELP\",\n      \"FILL_FORM_WITH_AI\"\n    ]\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/ia/guide/employee",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "ia",
+                "guide",
+                "employee"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
