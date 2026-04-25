@@ -7,6 +7,7 @@ from app.core.security import configure_security
 from app.modules.analytics_ai.controller import router as analytics_ai_router
 from app.modules.form_assistant.controller import router as form_assistant_router
 from app.modules.simulations_ai.controller import router as simulations_ai_router
+from app.modules.user_guide.controller import router as user_guide_router
 from app.modules.workflow_generator.controller import router as workflow_generator_router
 
 
@@ -26,6 +27,7 @@ def create_app() -> FastAPI:
     app.include_router(form_assistant_router)
     app.include_router(analytics_ai_router)
     app.include_router(simulations_ai_router)
+    app.include_router(user_guide_router)
 
     @app.get("/health", tags=["health"])
     async def health() -> dict[str, str]:

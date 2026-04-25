@@ -14,6 +14,10 @@ class Settings(BaseSettings):
         validation_alias="DEEPSEEK_BASE_URL",
     )
     deepseek_model: str = Field(default="deepseek-chat", validation_alias="DEEPSEEK_MODEL")
+    deepseek_user_guide_model: str = Field(
+        default="deepseek-v4-flash",
+        validation_alias="DEEPSEEK_USER_GUIDE_MODEL",
+    )
     deepseek_max_tokens: int = Field(default=0, validation_alias="DEEPSEEK_MAX_TOKENS")
     deepseek_temperature: float = Field(default=0.2, validation_alias="DEEPSEEK_TEMPERATURE")
     deepseek_timeout_seconds: float = Field(default=0.0, validation_alias="DEEPSEEK_TIMEOUT_SECONDS")

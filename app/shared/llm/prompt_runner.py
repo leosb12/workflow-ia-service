@@ -11,9 +11,13 @@ class PromptRunner:
         *,
         system_prompt: str,
         user_prompt: str,
+        model_override: str | None = None,
     ) -> str:
         messages = [
             DeepSeekMessage(role="system", content=system_prompt),
             DeepSeekMessage(role="user", content=user_prompt),
         ]
-        return await self.llm_client.generar_json(messages)
+        return await self.llm_client.generar_json(
+            messages,
+            model_override=model_override,
+        )
