@@ -1,9 +1,19 @@
 from fastapi import APIRouter, Body, Depends
 
-from app.modules.user_guide.infrastructure.dependencies import get_admin_guide_service
-from app.modules.user_guide.schemas.guide_request import AdminGuideRequest
-from app.modules.user_guide.schemas.guide_response import AdminGuideResponse
-from app.modules.user_guide.service.admin_guide_service import AdminGuideService
+from app.modules.user_guide.infrastructure.dependencies import (
+    get_admin_guide_service,
+    get_employee_guide_service,
+)
+from app.modules.user_guide.common.guide_request import (
+    AdminGuideRequest,
+    EmployeeGuideRequest,
+)
+from app.modules.user_guide.common.guide_response import (
+    AdminGuideResponse,
+    EmployeeGuideResponse,
+)
+from app.modules.user_guide.admin.admin_guide_service import AdminGuideService
+from app.modules.user_guide.employee.employee_guide_service import EmployeeGuideService
 
 router = APIRouter(prefix="/api/ia/guide", tags=["ia"])
 
@@ -56,6 +66,91 @@ _ADMIN_GUIDE_EXAMPLE = {
     },
 }
 
+_EMPLOYEE_GUIDE_EXAMPLE = {
+    "userId": "func-1",
+    "userName": "Funcionario Operativo",
+    "role": "EMPLOYEE",
+    "screen": "TASK_FORM",
+    "question": "Que lleno aqui?",
+    "context": {
+        "taskId": "task-1",
+        "instanceId": "inst-1",
+        "policyId": "pol-1",
+        "policyName": "Instalacion de medidor",
+        "currentNode": {
+            "id": "node-1",
+            "type": "ACTIVITY",
+            "name": "Evaluar viabilidad tecnica",
+            "description": "Validar si tecnicamente se puede instalar el medidor",
+            "department": "Departamento Tecnico",
+            "estimatedTime": "48h",
+        },
+        "taskStatus": "IN_PROGRESS",
+        "priority": "HIGH",
+        "form": {
+            "fields": [
+                {
+                    "name": "viable",
+                    "label": "Es viable tecnicamente?",
+                    "type": "BOOLEAN",
+                    "required": True,
+                    "value": None,
+                },
+                {
+                    "name": "observaciones",
+                    "label": "Observaciones tecnicas",
+                    "type": "TEXTAREA",
+                    "required": False,
+                    "value": "",
+                },
+            ],
+            "missingRequiredFields": ["viable"],
+        },
+        "historySummary": {
+            "completedSteps": 2,
+            "currentStep": "Evaluar viabilidad tecnica",
+            "pendingSteps": 3,
+            "lastCompletedBy": "Atencion al Cliente",
+        },
+        "nextPossibleSteps": [
+            {
+                "condition": "Si marcas Sí",
+                "nextNode": "Revision legal",
+                "nextDepartment": "Legal",
+            },
+            {
+                "condition": "Si marcas No",
+                "nextNode": "Rechazo de solicitud",
+                "nextDepartment": "Atencion al Cliente",
+            },
+        ],
+        "dashboardSummary": {
+            "pendingTasks": 3,
+            "inProgressTasks": 1,
+            "completedTasks": 4,
+            "overdueTasks": 1,
+        },
+        "taskQueue": [
+            {
+                "taskId": "task-1",
+                "taskName": "Evaluar viabilidad tecnica",
+                "taskStatus": "OVERDUE",
+                "priority": "HIGH",
+                "ageHours": 56,
+                "overdue": True,
+                "policyName": "Instalacion de medidor",
+            }
+        ],
+        "availableActions": [
+            "START_TASK",
+            "SAVE_FORM",
+            "COMPLETE_TASK",
+            "ASK_HELP",
+            "FILL_FORM_WITH_AI",
+        ],
+    },
+}
+
 
 @router.post("/admin", response_model=AdminGuideResponse)
 async def guide_admin(
@@ -66,3 +161,14 @@ async def guide_admin(
     service: AdminGuideService = Depends(get_admin_guide_service),
 ) -> AdminGuideResponse:
     return await service.guide_admin(request)
+
+
+@router.post("/employee", response_model=EmployeeGuideResponse)
+async def guide_employee(
+    request: EmployeeGuideRequest = Body(
+        ...,
+        openapi_examples={"employee_guide": {"value": _EMPLOYEE_GUIDE_EXAMPLE}},
+    ),
+    service: EmployeeGuideService = Depends(get_employee_guide_service),
+) -> EmployeeGuideResponse:
+    return await service.guide_employee(request)
