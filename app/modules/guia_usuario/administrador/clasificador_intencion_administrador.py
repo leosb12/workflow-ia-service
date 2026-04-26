@@ -108,6 +108,8 @@ class ClasificadorIntencionAdministrador:
             [
                 "paso a paso",
                 "guiame",
+
+
                 "como empiezo",
                 "como hago esto",
             ],
@@ -145,6 +147,44 @@ class ClasificadorIntencionAdministrador:
             ],
         ):
             return IntencionGuiaAdministrador.HELP_ACTIVATE_POLICY
+
+        if self._contains_any(
+            normalized,
+            [
+                "notificaciones",
+                "notificacion",
+                "activar notificaciones",
+                "chrome",
+                "como activo notificaciones",
+                "recibo notificaciones",
+                "que notificaciones recibo",
+            ],
+        ):
+            return IntencionGuiaAdministrador.EXPLAIN_NOTIFICATIONS
+
+        if self._contains_any(
+            normalized,
+            [
+                "crear politica con ia",
+                "crear con ia",
+                "generar con ia",
+                "crear usando ia",
+                "ia para crear",
+            ],
+        ):
+            return IntencionGuiaAdministrador.EXPLAIN_AI_POLICY_CREATION
+
+        if self._contains_any(
+            normalized,
+            [
+                "editar politica con ia",
+                "editar con ia",
+                "modificar con ia",
+                "editar usando ia",
+                "ia para editar",
+            ],
+        ):
+            return IntencionGuiaAdministrador.EXPLAIN_AI_POLICY_EDITION
 
         if screen == PantallaGuia.POLICY_DESIGNER and self._contains_any(
             normalized,

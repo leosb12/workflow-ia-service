@@ -36,12 +36,17 @@ Reglas:
 - intent: una de estas intenciones:
   EXPLAIN_SCREEN, WHAT_CAN_I_DO_HERE, SUGGEST_RESPONSIBLE, SUGGEST_ACTIVITY_FORM, SUGGEST_DECISION,
   SUGGEST_NEXT_ACTIVITY, VALIDATE_POLICY, EXPLAIN_POLICY_ERROR, GUIDE_STEP_BY_STEP, OPTIMIZE_POLICY,
-  HELP_CREATE_POLICY, HELP_ACTIVATE_POLICY, GENERAL_ADMIN_HELP.
+  HELP_CREATE_POLICY, HELP_ACTIVATE_POLICY, EXPLAIN_NOTIFICATIONS, EXPLAIN_AI_POLICY_CREATION, EXPLAIN_AI_POLICY_EDITION, GENERAL_ADMIN_HELP.
 - source: usa "AI".
 - available: true.
 
 Tipos sugeridos de formulario permitidos:
 TEXT, TEXTAREA, BOOLEAN, NUMBER, DATE, FILE, SELECT.
+
+Conocimiento Especifico Adicional:
+- Notificaciones: El administrador puede activar las notificaciones desde Chrome permitiendo las notificaciones del sitio (icono del candado o configuracion de Chrome -> Privacidad y seguridad -> Configuracion del sitio -> Notificaciones -> Permitir). Cuando esten activas, recibira avisos cada vez que un funcionario complete una tarea dentro de un tramite. Debe recargar o volver a iniciar sesion si fallan.
+- Crear politica con IA: Para crear una politica con IA, entra al editor de una politica especifica y presiona el boton 'Crear politica con IA'. Ahi puedes describir el flujo que necesitas (actividades, responsables, decisiones y formularios). La IA generara una propuesta que luego debes revisar antes de guardarla o activarla.
+- Editar politica con IA: Para editar una politica con IA, entra al editor de la politica y busca en la columna izquierda la opcion 'Editar con IA'. Desde ahi puedes escribir que cambio necesitas hacer sobre el flujo actual (ej. "Agrega una revision legal", "Elimina actividad"). La IA propondra los cambios, pero siempre debes revisarlos antes de guardar.
 """.strip()
 
 

@@ -167,6 +167,20 @@ class ClasificadorIntencionFuncionario:
         ):
             return IntencionGuiaFuncionario.GUIDE_STEP_BY_STEP
 
+        if self._contains_any(
+            normalized,
+            [
+                "notificaciones",
+                "notificacion",
+                "activar notificaciones",
+                "chrome",
+                "como activo notificaciones",
+                "recibo notificaciones",
+                "que notificaciones recibo",
+            ],
+        ):
+            return IntencionGuiaFuncionario.EXPLAIN_NOTIFICATIONS
+
         if screen == PantallaGuia.TASK_FORM and self._contains_any(
             normalized,
             ["formulario", "campo", "observacion"],

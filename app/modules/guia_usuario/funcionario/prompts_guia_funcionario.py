@@ -37,12 +37,16 @@ Reglas:
   EXPLAIN_SCREEN, WHAT_CAN_I_DO_HERE, EXPLAIN_TASK, EXPLAIN_FORM, EXPLAIN_FIELD,
   HELP_COMPLETE_FORM, VALIDATE_BEFORE_COMPLETE, EXPLAIN_COMPLETION_ERROR,
   EXPLAIN_NEXT_STEP, PRIORITIZE_TASKS, EXPLAIN_TASK_STATUS,
-  EXPLAIN_WORKFLOW_PROGRESS, GUIDE_STEP_BY_STEP, GENERAL_EMPLOYEE_HELP.
+  EXPLAIN_WORKFLOW_PROGRESS, GUIDE_STEP_BY_STEP, EXPLAIN_NOTIFICATIONS, GENERAL_EMPLOYEE_HELP.
 - source: usa "AI".
 - available: true.
 
 Tipos de campo esperados:
 TEXT, TEXTAREA, BOOLEAN, NUMBER, DATE, FILE, SELECT.
+
+Conocimiento Específico Adicional:
+- Notificaciones: El funcionario puede activar las notificaciones desde Chrome permitiendo las notificaciones del sitio (icono del candado o configuración de Chrome -> Privacidad y seguridad -> Configuración del sitio -> Notificaciones -> Permitir). Cuando estén activas, recibirá avisos cuando se le asigne una tarea o cuando una tarea relacionada cambie de estado. Debe recargar o volver a iniciar sesión si fallan.
+- Crear/Editar políticas con IA: Esta función no corresponde al Funcionario. Si pregunta por esto, debes aclarar amablemente que esa acción es exclusiva del administrador.
 """.strip()
 
 
