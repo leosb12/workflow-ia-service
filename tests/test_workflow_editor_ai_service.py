@@ -99,6 +99,11 @@ def run_backend_workflow_prompt(prompt: str):
     return asyncio.run(build_service().interpretar_edicion(request))
 
 
+def run_prompt_with_context(prompt: str, context: dict):
+    request = SolicitudEdicionFlujo.model_validate({"workflow": build_workflow(), "prompt": prompt, "context": context})
+    return asyncio.run(build_service().interpretar_edicion(request))
+
+
 def test_delete_existing_activity_returns_delete_node_operation() -> None:
     response = run_prompt("Elimina la actividad Solicitar datos")
 
@@ -231,7 +236,7 @@ def test_backend_workflow_shape_supports_natural_add_activity_after_prompt() -> 
     assert response.errors == []
     assert response.operations[0].type == "ADD_NODE"
     assert response.operations[0].node_name == "Pedir foto del paciente"
-    assert response.operations[0].reference_node_name == "solicitar datos del apacienter"
+    assert response.operations[0].reference_node_name == "Solicitar datos del paciente"
 
 
 def test_backend_workflow_shape_infers_position_for_short_add_node_prompt() -> None:
@@ -278,3 +283,52 @@ def test_invalid_ai_add_node_without_node_name_falls_back_for_backend_workflow_s
     assert response.errors == []
     assert response.operations[0].type == "ADD_NODE"
     assert response.operations[0].node_name == "Pedir foto del paciente"
+
+
+def test_add_decision_uses_selected_node_context_for_relative_instruction() -> None:
+    response = run_prompt_with_context(
+        "anadime nodo decision preguntar si es hombre o mujer",
+        {
+            "selectedNode": {
+                "id": "revisar",
+                "name": "Revisar solicitud",
+            }
+        },
+    )
+
+    assert response.success is True
+    assert response.intent == "UPDATE_WORKFLOW"
+    assert response.errors == []
+    assert response.operations[0].type == "ADD_NODE"
+    assert response.operations[0].node_type == "decision"
+    assert response.operations[0].node_name == "Preguntar si es hombre o mujer"
+    assert response.operations[0].reference_node_name == "Revisar solicitud"
+    assert response.operations[0].position == "after"
+
+
+def test_reconnect_transition_uses_selected_and_target_node_context() -> None:
+    response = run_prompt_with_context(
+        "cambiame la conexion entre este nodo y conectalo al otro nodo",
+        {
+            "selectedNode": {
+                "id": "validar",
+                "name": "Validar documentos",
+            },
+            "targetNode": {
+                "id": "notificar",
+                "name": "Notificar resultado",
+            },
+        },
+    )
+
+    assert response.success is True
+    assert response.intent == "UPDATE_WORKFLOW"
+    assert response.errors == []
+    assert [operation.type for operation in response.operations] == [
+        "DELETE_TRANSITION",
+        "ADD_TRANSITION",
+    ]
+    assert response.operations[0].from_node_name == "Validar documentos"
+    assert response.operations[0].to_node_name == "Aprobar solicitud"
+    assert response.operations[1].from_node_name == "Validar documentos"
+    assert response.operations[1].to_node_name == "Notificar resultado"

@@ -45,6 +45,11 @@ Tipos soportados:
 
 Reglas:
 - Usa nombres o ids existentes cuando la operacion dependa de un nodo actual.
+- Interpreta referencias relativas usando el context si existe: "este nodo", "nodo actual", "seleccionado", "el otro nodo", "siguiente nodo", "nodo anterior".
+- Si el usuario pide reconectar, mover o cambiar una conexion existente, prioriza una secuencia segura de operaciones estructuradas como DELETE_TRANSITION + ADD_TRANSITION.
+- Si el usuario pide agregar una decision en lenguaje natural como "preguntar si..." o "validar si...", conviertelo en un ADD_NODE de tipo decision con un nombre breve y entendible.
+- Si el usuario escribe con errores ortograficos, intencion informal o mezcla de espanol tecnico y coloquial, interpreta la accion mas probable apoyandote en los nombres reales del workflow.
+- Si la instruccion depende del nodo seleccionado y este viene en context, usalo como referencia principal antes de inventar otra ubicacion.
 - No elimines nodos de inicio.
 - No elimines el unico nodo final.
 - No propongas transiciones duplicadas.

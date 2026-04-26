@@ -5,7 +5,7 @@ from typing import Any
 
 from pydantic import ValidationError
 
-from app.modules.editor_flujo_ia.dominio.validador_edicion_flujo import ValidadorEdicionFlujo
+from app.modules.editor_flujo_ia.dominio.validador_edicion_flujo import ValidadorEdicionFlujo, _WorkflowContext
 from app.modules.editor_flujo_ia.modelos.respuesta_edicion_flujo import (
     IntencionEdicion,
     OperacionEdicionFlujo,
@@ -111,52 +111,71 @@ class ServicioEditorFlujoIa:
     ) -> tuple[list[OperacionEdicionFlujo], list[str]]:
         prompt = request.prompt.strip()
         normalized = self._normalize(prompt)
+        workflow_context = _WorkflowContext(request.workflow)
         warnings: list[str] = []
         operations: list[OperacionEdicionFlujo] = []
 
-        operation = self._detect_rename(prompt)
+        operation = self._detect_rename(prompt, request.workflow, request.context)
         if operation:
             return [operation], warnings
 
-        operation = self._detect_loop(prompt)
+        operation = self._detect_loop(prompt, request.workflow, request.context)
         if operation:
             return [operation], warnings
 
-        operations = self._detect_insert_activity_between(prompt)
+        operations = self._detect_reconnect_transition(request)
         if operations:
             return operations, warnings
 
-        operation = self._detect_delete_transition(prompt)
+        operations = self._detect_insert_activity_between(prompt, request.workflow, request.context)
+        if operations:
+            return operations, warnings
+
+        operation = self._detect_delete_transition(prompt, request.workflow, request.context)
         if operation:
             return [operation], warnings
 
-        operation = self._detect_add_transition(prompt)
+        operation = self._detect_add_transition(prompt, request.workflow, request.context)
         if operation:
             return [operation], warnings
 
-        operation = self._detect_assign_responsible(prompt)
+        operation = self._detect_assign_responsible(prompt, request.workflow, request.context)
         if operation:
             return [operation], warnings
 
-        operation = self._detect_form_update(prompt)
+        operation = self._detect_form_update(prompt, request.workflow, request.context)
         if operation:
             return [operation], warnings
 
-        operation = self._detect_add_decision(prompt)
+        operation = self._detect_add_decision(prompt, request.workflow, request.context)
         if operation:
             return [operation], warnings
 
-        operation = self._detect_add_activity(prompt)
+        operation = self._detect_add_activity(prompt, request.workflow, request.context)
         if operation:
             return [operation], warnings
 
-        operation = self._detect_add_node_with_inferred_position(prompt, request.workflow)
+        operation = self._detect_add_node_with_inferred_position(prompt, request.workflow, request.context)
         if operation:
             return [operation], warnings
 
-        operation = self._detect_delete_node(prompt)
+        operation = self._detect_delete_node(prompt, request.workflow, request.context)
         if operation:
             return [operation], warnings
+
+        if "decision" in normalized and self._selected_node_name(request.context, workflow_context):
+            selected_node_name = self._selected_node_name(request.context, workflow_context)
+            if selected_node_name:
+                return [
+                    OperacionEdicionFlujo(
+                        type="ADD_NODE",
+                        node_name="Decidir siguiente paso",
+                        node_type="decision",
+                        reference_node_name=selected_node_name,
+                        position="after",
+                        description="Decision agregada por contexto del nodo seleccionado.",
+                    )
+                ], warnings
 
         if self._looks_ambiguous(normalized):
             warnings.append(
@@ -169,19 +188,29 @@ class ServicioEditorFlujoIa:
         )
         return operations, warnings
 
-    def _detect_delete_node(self, prompt: str) -> OperacionEdicionFlujo | None:
+    def _detect_delete_node(
+        self,
+        prompt: str,
+        workflow: dict[str, Any],
+        context: dict[str, Any],
+    ) -> OperacionEdicionFlujo | None:
         patterns = [
             r"\b(?:elimina|eliminar|borra|borrar|quita|quitar)\s+(?:la\s+|el\s+)?(?:actividad|nodo|tarea)?\s*(?P<node>.+)$",
         ]
         match = self._first_match(prompt, patterns)
         if not match:
             return None
-        node_name = self._clean_node_name(match.group("node"))
+        node_name = self._resolve_node_reference_name(self._clean_node_name(match.group("node")), workflow, context)
         if not node_name:
             return None
         return OperacionEdicionFlujo(type="DELETE_NODE", node_name=node_name)
 
-    def _detect_rename(self, prompt: str) -> OperacionEdicionFlujo | None:
+    def _detect_rename(
+        self,
+        prompt: str,
+        workflow: dict[str, Any],
+        context: dict[str, Any],
+    ) -> OperacionEdicionFlujo | None:
         patterns = [
             r"\b(?:cambia|cambiar|renombra|renombrar)\s+(?:el\s+)?nombre\s+(?:de\s+)?(?:la\s+|el\s+)?(?:actividad|nodo|tarea)?\s*(?P<old>.+?)\s+a\s+(?P<new>.+)$",
             r"\b(?:cambia|cambiar|renombra|renombrar)\s+(?:la\s+|el\s+)?(?:actividad|nodo|tarea)\s+(?P<old>.+?)\s+a\s+(?P<new>.+)$",
@@ -189,13 +218,18 @@ class ServicioEditorFlujoIa:
         match = self._first_match(prompt, patterns)
         if not match:
             return None
-        old_name = self._clean_node_name(match.group("old"))
+        old_name = self._resolve_node_reference_name(self._clean_node_name(match.group("old")), workflow, context)
         new_name = self._clean_node_name(match.group("new"))
         if not old_name or not new_name:
             return None
         return OperacionEdicionFlujo(type="RENAME_NODE", node_name=old_name, new_name=new_name)
 
-    def _detect_loop(self, prompt: str) -> OperacionEdicionFlujo | None:
+    def _detect_loop(
+        self,
+        prompt: str,
+        workflow: dict[str, Any],
+        context: dict[str, Any],
+    ) -> OperacionEdicionFlujo | None:
         normalized = self._normalize(prompt)
         if "loop" not in normalized and "vuelva" not in normalized and "volver" not in normalized:
             return None
@@ -211,27 +245,44 @@ class ServicioEditorFlujoIa:
         condition = self._clean_condition(match.groupdict().get("condition")) or "Requiere volver a la actividad anterior"
         return OperacionEdicionFlujo(
             type="CREATE_LOOP",
-            from_node_name=self._clean_node_name(match.group("from")),
-            to_node_name=self._clean_node_name(match.group("to")),
+            from_node_name=self._resolve_node_reference_name(self._clean_node_name(match.group("from")), workflow, context),
+            to_node_name=self._resolve_node_reference_name(self._clean_node_name(match.group("to")), workflow, context),
             condition=condition,
         )
 
-    def _detect_add_transition(self, prompt: str) -> OperacionEdicionFlujo | None:
+    def _detect_add_transition(
+        self,
+        prompt: str,
+        workflow: dict[str, Any],
+        context: dict[str, Any],
+    ) -> OperacionEdicionFlujo | None:
         patterns = [
             r"\bconecta\s+(?P<from>.+?)\s+con\s+(?P<to>.+?)(?:\s+(?:cuando|si|con condicion)\s+(?P<condition>.+))?$",
             r"\b(?:agrega|agregar|crea|crear)\s+(?:una\s+)?transici.n\s+(?:desde|entre)\s+(?P<from>.+?)\s+(?:hacia|a|y)\s+(?P<to>.+?)(?:\s+(?:cuando|si|con condicion)\s+(?P<condition>.+))?$",
+            r"\bconect(?:alo|ala|arlo|arla)\s+(?:a|con)\s+(?P<to>.+?)(?:\s+(?:cuando|si|con condicion)\s+(?P<condition>.+))?$",
         ]
         match = self._first_match(prompt, patterns)
         if not match:
             return None
+        from_node_name = self._resolve_node_reference_name(
+            self._clean_node_name(match.groupdict().get("from")) or "este nodo",
+            workflow,
+            context,
+        )
+        to_node_name = self._resolve_node_reference_name(self._clean_node_name(match.group("to")), workflow, context)
         return OperacionEdicionFlujo(
             type="ADD_TRANSITION",
-            from_node_name=self._clean_node_name(match.group("from")),
-            to_node_name=self._clean_node_name(match.group("to")),
+            from_node_name=from_node_name,
+            to_node_name=to_node_name,
             condition=self._clean_condition(match.groupdict().get("condition")),
         )
 
-    def _detect_delete_transition(self, prompt: str) -> OperacionEdicionFlujo | None:
+    def _detect_delete_transition(
+        self,
+        prompt: str,
+        workflow: dict[str, Any],
+        context: dict[str, Any],
+    ) -> OperacionEdicionFlujo | None:
         normalized = self._normalize(prompt)
         if "transicion" not in normalized:
             return None
@@ -245,11 +296,16 @@ class ServicioEditorFlujoIa:
             return None
         return OperacionEdicionFlujo(
             type="DELETE_TRANSITION",
-            from_node_name=self._clean_node_name(match.group("from")),
-            to_node_name=self._clean_node_name(match.group("to")),
+            from_node_name=self._resolve_node_reference_name(self._clean_node_name(match.group("from")), workflow, context),
+            to_node_name=self._resolve_node_reference_name(self._clean_node_name(match.group("to")), workflow, context),
         )
 
-    def _detect_assign_responsible(self, prompt: str) -> OperacionEdicionFlujo | None:
+    def _detect_assign_responsible(
+        self,
+        prompt: str,
+        workflow: dict[str, Any],
+        context: dict[str, Any],
+    ) -> OperacionEdicionFlujo | None:
         match = self._first_match(
             prompt,
             [
@@ -264,19 +320,24 @@ class ServicioEditorFlujoIa:
         if any(token in responsible_normalized for token in ["quien inicio", "iniciador", "solicitante", "quien inicio el tramite"]):
             return OperacionEdicionFlujo(
                 type="ASSIGN_RESPONSIBLE",
-                node_name=self._clean_node_name(match.group("node")),
+                node_name=self._resolve_node_reference_name(self._clean_node_name(match.group("node")), workflow, context),
                 responsible_type="initiator",
                 responsible_role_name="Iniciador",
             )
         return OperacionEdicionFlujo(
             type="ASSIGN_RESPONSIBLE",
-            node_name=self._clean_node_name(match.group("node")),
+            node_name=self._resolve_node_reference_name(self._clean_node_name(match.group("node")), workflow, context),
             responsible_type="department",
             responsible_role_name=responsible,
             department_hint=responsible,
         )
 
-    def _detect_form_update(self, prompt: str) -> OperacionEdicionFlujo | None:
+    def _detect_form_update(
+        self,
+        prompt: str,
+        workflow: dict[str, Any],
+        context: dict[str, Any],
+    ) -> OperacionEdicionFlujo | None:
         normalized = self._normalize(prompt)
         if "formulario" not in normalized:
             return None
@@ -288,14 +349,19 @@ class ServicioEditorFlujoIa:
         )
         if not match:
             return None
-        node_name = self._clean_node_name(match.group("node"))
+        node_name = self._resolve_node_reference_name(self._clean_node_name(match.group("node")), workflow, context)
         return OperacionEdicionFlujo(
             type="UPDATE_FORM",
             node_name=node_name,
             form_name=f"Formulario {node_name}",
         )
 
-    def _detect_add_decision(self, prompt: str) -> OperacionEdicionFlujo | None:
+    def _detect_add_decision(
+        self,
+        prompt: str,
+        workflow: dict[str, Any],
+        context: dict[str, Any],
+    ) -> OperacionEdicionFlujo | None:
         normalized = self._normalize(prompt)
         if "decision" not in normalized:
             return None
@@ -303,21 +369,34 @@ class ServicioEditorFlujoIa:
             prompt,
             [
                 r"\b(?:agrega|agregar|crea|crear)\s+(?:una\s+)?decisi.n\s+(?P<position>despues|despu.s|antes)\s+de\s+(?P<reference>.+)$",
+                r"\b(?:agrega|agregar|crea|crear|anade|anadir|anadime)\s+(?:un\s+)?(?:nodo\s+(?:de\s+)?)?decisi.n\s+(?P<name>.+?)(?:(?:\s+)(?P<position>despues|despu.s|antes)\s+de\s+(?P<reference>.+))?$",
             ],
         )
         if not match:
             return None
-        position = "after" if self._normalize(match.group("position")) == "despues" else "before"
+        raw_position = self._normalize(match.groupdict().get("position") or "despues")
+        position = "after" if raw_position == "despues" else "before"
+        reference_name = self._resolve_node_reference_name(
+            self._clean_node_name(match.groupdict().get("reference")) or "este nodo",
+            workflow,
+            context,
+        )
+        node_name = self._build_decision_name(match.groupdict().get("name"), prompt)
         return OperacionEdicionFlujo(
             type="ADD_NODE",
-            node_name="Decidir siguiente paso",
+            node_name=node_name,
             node_type="decision",
-            reference_node_name=self._clean_node_name(match.group("reference")),
+            reference_node_name=reference_name,
             position=position,
             description="Decision agregada por instruccion de edicion IA.",
         )
 
-    def _detect_add_activity(self, prompt: str) -> OperacionEdicionFlujo | None:
+    def _detect_add_activity(
+        self,
+        prompt: str,
+        workflow: dict[str, Any],
+        context: dict[str, Any],
+    ) -> OperacionEdicionFlujo | None:
         match = self._first_match(
             prompt,
             [
@@ -341,12 +420,17 @@ class ServicioEditorFlujoIa:
             type="ADD_NODE",
             node_name=node_name,
             node_type="task",
-            reference_node_name=self._clean_node_name(match.group("reference")),
+            reference_node_name=self._resolve_node_reference_name(self._clean_node_name(match.group("reference")), workflow, context),
             position=position,
             description="Actividad agregada por instruccion de edicion IA.",
         )
 
-    def _detect_insert_activity_between(self, prompt: str) -> list[OperacionEdicionFlujo]:
+    def _detect_insert_activity_between(
+        self,
+        prompt: str,
+        workflow: dict[str, Any],
+        context: dict[str, Any],
+    ) -> list[OperacionEdicionFlujo]:
         match = self._first_match(
             prompt,
             [
@@ -358,8 +442,8 @@ class ServicioEditorFlujoIa:
             return []
 
         node_name = self._clean_node_name(match.group("name"))
-        from_node_name = self._clean_quoted_node_name(match.group("from"))
-        to_node_name = self._clean_quoted_node_name(match.group("to"))
+        from_node_name = self._resolve_node_reference_name(self._clean_quoted_node_name(match.group("from")), workflow, context)
+        to_node_name = self._resolve_node_reference_name(self._clean_quoted_node_name(match.group("to")), workflow, context)
         if not node_name or not from_node_name or not to_node_name:
             return []
 
@@ -393,17 +477,18 @@ class ServicioEditorFlujoIa:
         self,
         prompt: str,
         workflow: dict[str, Any],
+        context: dict[str, Any],
     ) -> OperacionEdicionFlujo | None:
         normalized = self._normalize(prompt)
         if not any(token in normalized for token in ["agrega", "agregar", "crea", "crear", "anade", "anadir", "anadime"]):
             return None
-        if not any(token in normalized for token in ["nodo", "actividad", "tarea"]):
+        if not any(token in normalized for token in ["nodo", "actividad", "tarea", "decision"]):
             return None
 
         match = self._first_match(
             prompt,
             [
-                r"\b(?:agrega|agregar|crea|crear|anade|anadir|anadime)\s+(?:el\s+|un\s+|una\s+)?(?:nodo|actividad|tarea)\s+(?:llamad[ao]\s+)?(?P<name>.+)$",
+                r"\b(?:agrega|agregar|crea|crear|anade|anadir|anadime)\s+(?:el\s+|un\s+|una\s+)?(?:nodo|actividad|tarea|decision)\s+(?:llamad[ao]\s+)?(?P<name>.+)$",
             ],
         )
         if not match:
@@ -413,20 +498,97 @@ class ServicioEditorFlujoIa:
         if not node_name:
             return None
 
-        reference_name = self._find_node_name_by_tokens(workflow, ["solicitar", "datos"])
+        reference_name = self._selected_node_name(context, _WorkflowContext(workflow))
+        if not reference_name:
+            reference_name = self._find_node_name_by_tokens(workflow, ["solicitar", "datos"])
         if not reference_name:
             reference_name = self._first_activity_node_name(workflow)
         if not reference_name:
             return None
 
+        node_type = "decision" if "decision" in normalized else "task"
+        final_node_name = self._build_decision_name(node_name, prompt) if node_type == "decision" else node_name[:1].upper() + node_name[1:]
+
         return OperacionEdicionFlujo(
             type="ADD_NODE",
-            node_name=node_name[:1].upper() + node_name[1:],
-            node_type="task",
+            node_name=final_node_name,
+            node_type=node_type,
             reference_node_name=reference_name,
             position="after",
-            description="Actividad agregada por instruccion de edicion IA.",
+            description="Nodo agregado por instruccion de edicion IA.",
         )
+
+    def _detect_reconnect_transition(self, request: SolicitudEdicionFlujo) -> list[OperacionEdicionFlujo]:
+        prompt = request.prompt
+        normalized = self._normalize(prompt)
+        if not any(
+            token in normalized
+            for token in [
+                "reconecta",
+                "reconectar",
+                "redirige",
+                "redirecciona",
+                "cambia la conexion",
+                "cambiar la conexion",
+                "cambiame la conexion",
+                "reemplaza la conexion",
+            ]
+        ):
+            return []
+
+        workflow_context = _WorkflowContext(request.workflow)
+        source_name = ""
+        target_name = ""
+        old_target_name = ""
+
+        match = self._first_match(
+            prompt,
+            [
+                r"\b(?:reconecta|redirige|redirecciona|reemplaza)\s+(?P<from>.+?)\s+(?:a|hacia|con)\s+(?P<to>.+)$",
+                r"\b(?:cambia|cambiar|reemplaza|reemplazar)\s+(?:la\s+)?conexion\s+entre\s+(?P<from>.+?)\s+y\s+conect(?:a|alo|arla)\s+(?:a|con)\s+(?P<to>.+)$",
+                r"\bcambiame\s+(?:la\s+)?conexion\s+entre\s+(?P<from>.+?)\s+y\s+conect(?:a|alo|arla)\s+(?:a|con)\s+(?P<to>.+)$",
+                r"\b(?:cambia|cambiar)\s+(?:la\s+)?conexion\s+de\s+(?P<from>.+?)\s+a\s+(?P<to>.+)$",
+            ],
+        )
+        if match:
+            source_name = self._resolve_node_reference_name(self._clean_node_name(match.groupdict().get("from")) or "este nodo", request.workflow, request.context)
+            target_name = self._resolve_node_reference_name(self._clean_node_name(match.group("to")), request.workflow, request.context)
+
+        old_pair_match = self._first_match(
+            prompt,
+            [
+                r"\b(?:cambia|cambiar|reemplaza|reemplazar)\s+(?:la\s+)?conexion\s+entre\s+(?P<from>.+?)\s+y\s+(?P<old_to>.+?)\s+(?:por|para)\s+(?P<to>.+)$",
+            ],
+        )
+        if old_pair_match:
+            source_name = self._resolve_node_reference_name(self._clean_node_name(old_pair_match.group("from")), request.workflow, request.context)
+            old_target_name = self._resolve_node_reference_name(self._clean_node_name(old_pair_match.group("old_to")), request.workflow, request.context)
+            target_name = self._resolve_node_reference_name(self._clean_node_name(old_pair_match.group("to")), request.workflow, request.context)
+
+        if not source_name:
+            source_name = self._selected_node_name(request.context, workflow_context)
+        if not target_name:
+            target_name = self._target_node_name(request.context, workflow_context)
+        if not source_name or not target_name:
+            return []
+
+        if not old_target_name:
+            old_target_name = self._sole_outgoing_node_name(source_name, workflow_context)
+        if not old_target_name or self._normalize(old_target_name) == self._normalize(target_name):
+            return []
+
+        return [
+            OperacionEdicionFlujo(
+                type="DELETE_TRANSITION",
+                from_node_name=source_name,
+                to_node_name=old_target_name,
+            ),
+            OperacionEdicionFlujo(
+                type="ADD_TRANSITION",
+                from_node_name=source_name,
+                to_node_name=target_name,
+            ),
+        ]
 
     def _build_intent(
         self,
@@ -557,6 +719,21 @@ class ServicioEditorFlujoIa:
         cleaned = value.strip().strip(" .,:;\"'")
         return cleaned or None
 
+    def _build_decision_name(self, raw_name: str | None, prompt: str) -> str:
+        cleaned = (raw_name or "").strip().strip(" .,:;\"'")
+        if not cleaned:
+            return "Decidir siguiente paso"
+        normalized = self._normalize(cleaned)
+        if normalized.startswith("preguntar si"):
+            return cleaned[:1].upper() + cleaned[1:]
+        if normalized.startswith("si "):
+            return "Preguntar " + cleaned
+        if "hombre" in normalized and "mujer" in normalized:
+            return cleaned[:1].upper() + cleaned[1:]
+        if "decision" in self._normalize(prompt):
+            return cleaned[:1].upper() + cleaned[1:]
+        return "Decision " + cleaned[:1].upper() + cleaned[1:]
+
     def _workflow_nodes(self, workflow: dict[str, Any]) -> list[Any]:
         nodes = workflow.get("nodes") or workflow.get("nodos")
         return nodes if isinstance(nodes, list) else []
@@ -572,6 +749,101 @@ class ServicioEditorFlujoIa:
             return ""
         value = node.get("type") or node.get("tipo")
         return self._normalize(str(value or ""))
+
+    def _context_node_dict(self, context: dict[str, Any], keys: list[str]) -> dict[str, Any] | None:
+        for key in keys:
+            value = context.get(key)
+            if isinstance(value, dict):
+                return value
+        return None
+
+    def _selected_node_name(self, context: dict[str, Any], workflow_context: _WorkflowContext) -> str:
+        node_data = self._context_node_dict(context, ["selectedNode", "selected_node", "currentNode", "current_node", "activeNode", "focusedNode"])
+        return self._extract_node_name_from_context_value(node_data, workflow_context)
+
+    def _target_node_name(self, context: dict[str, Any], workflow_context: _WorkflowContext) -> str:
+        node_data = self._context_node_dict(
+            context,
+            ["targetNode", "target_node", "destinationNode", "destination_node", "otherNode", "hoveredNode", "highlightedNode", "referenceNode"],
+        )
+        return self._extract_node_name_from_context_value(node_data, workflow_context)
+
+    def _extract_node_name_from_context_value(
+        self,
+        value: dict[str, Any] | None,
+        workflow_context: _WorkflowContext,
+    ) -> str:
+        if not isinstance(value, dict):
+            return ""
+        node_id = value.get("id")
+        if isinstance(node_id, str):
+            node = workflow_context.find_node(node_id, None)
+            if node:
+                return self._node_name(node)
+        for key in ["name", "nombre", "label", "title"]:
+            raw_value = value.get(key)
+            if isinstance(raw_value, str) and raw_value.strip():
+                resolved = self._resolve_existing_node_name(raw_value, workflow_context)
+                return resolved or raw_value.strip()
+        return ""
+
+    def _resolve_node_reference_name(
+        self,
+        raw_reference: str,
+        workflow: dict[str, Any],
+        context: dict[str, Any],
+    ) -> str:
+        cleaned = self._clean_node_name(raw_reference)
+        workflow_context = _WorkflowContext(workflow)
+        normalized = self._normalize(cleaned)
+        if not normalized:
+            return ""
+
+        if normalized in {"este", "esta", "este nodo", "esta actividad", "nodo actual", "actual", "seleccionado", "nodo seleccionado"}:
+            return self._selected_node_name(context, workflow_context)
+
+        if normalized in {"otro", "otra", "otro nodo", "el otro nodo", "ese nodo", "destino"}:
+            return self._target_node_name(context, workflow_context)
+
+        if normalized in {"siguiente nodo", "siguiente", "proximo nodo"}:
+            selected_name = self._selected_node_name(context, workflow_context)
+            if selected_name:
+                return self._sole_outgoing_node_name(selected_name, workflow_context)
+
+        if normalized in {"nodo anterior", "anterior"}:
+            selected_name = self._selected_node_name(context, workflow_context)
+            if selected_name:
+                return self._sole_incoming_node_name(selected_name, workflow_context)
+
+        resolved = self._resolve_existing_node_name(cleaned, workflow_context)
+        return resolved or cleaned
+
+    def _resolve_existing_node_name(self, raw_name: str, workflow_context: _WorkflowContext) -> str:
+        node_id = workflow_context.find_node_id_by_name(raw_name)
+        if not node_id:
+            return ""
+        node = workflow_context.find_node(node_id, None)
+        return self._node_name(node) if node else ""
+
+    def _sole_outgoing_node_name(self, source_name: str, workflow_context: _WorkflowContext) -> str:
+        source_id = workflow_context.find_node_id_by_name(source_name)
+        if not source_id:
+            return ""
+        outgoing = [transition for transition in workflow_context.transitions if transition.get("from") == source_id]
+        if len(outgoing) != 1:
+            return ""
+        target_node = workflow_context.find_node(str(outgoing[0].get("to") or ""), None)
+        return self._node_name(target_node) if target_node else ""
+
+    def _sole_incoming_node_name(self, target_name: str, workflow_context: _WorkflowContext) -> str:
+        target_id = workflow_context.find_node_id_by_name(target_name)
+        if not target_id:
+            return ""
+        incoming = [transition for transition in workflow_context.transitions if transition.get("to") == target_id]
+        if len(incoming) != 1:
+            return ""
+        source_node = workflow_context.find_node(str(incoming[0].get("from") or ""), None)
+        return self._node_name(source_node) if source_node else ""
 
     def _find_node_name_by_tokens(self, workflow: dict[str, Any], tokens: list[str]) -> str:
         for node in self._workflow_nodes(workflow):
