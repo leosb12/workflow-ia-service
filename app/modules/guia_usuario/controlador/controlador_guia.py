@@ -3,17 +3,21 @@ from fastapi import APIRouter, Body, Depends
 from app.modules.guia_usuario.infraestructura.dependencias import (
     obtener_servicio_guia_administrador,
     obtener_servicio_guia_funcionario,
+    obtener_servicio_guia_usuario_movil,
 )
 from app.modules.guia_usuario.comun.solicitud_guia import (
     SolicitudGuiaAdministrador,
     SolicitudGuiaFuncionario,
+    SolicitudGuiaUsuarioMovil,
 )
 from app.modules.guia_usuario.comun.respuesta_guia import (
     RespuestaGuiaAdministrador,
     RespuestaGuiaFuncionario,
+    RespuestaGuiaUsuarioMovil,
 )
 from app.modules.guia_usuario.administrador.servicio_guia_administrador import ServicioGuiaAdministrador
 from app.modules.guia_usuario.funcionario.servicio_guia_funcionario import ServicioGuiaFuncionario
+from app.modules.guia_usuario.usuario_movil.servicio_guia_usuario_movil import ServicioGuiaUsuarioMovil
 
 router = APIRouter(prefix="/api/ia/guide", tags=["ia"])
 
@@ -151,6 +155,47 @@ _EMPLOYEE_GUIDE_EXAMPLE = {
     },
 }
 
+_MOBILE_USER_GUIDE_EXAMPLE = {
+    "userId": "usr-1",
+    "role": "MOBILE_USER",
+    "screen": "DETALLE_TRAMITE",
+    "question": "En que estado esta mi tramite?",
+    "context": {
+        "tramiteId": "inst-1",
+        "politicaId": "pol-1",
+        "nombrePolitica": "Instalacion de medidor",
+        "estadoTramite": "EN_PROCESO",
+        "etapaActual": {
+            "id": "node-123",
+            "nombre": "Evaluacion tecnica",
+            "descripcion": "El area tecnica revisa la viabilidad de la solicitud",
+            "departamento": "Tecnico",
+        },
+        "resumenProgreso": {
+            "pasosCompletados": 2,
+            "pasoActual": "Evaluacion tecnica",
+            "pasosPendientes": 3,
+            "porcentajeAvance": 40,
+        },
+        "historial": [
+            {
+                "etapa": "Recepcion de solicitud",
+                "estado": "COMPLETADO",
+                "fecha": "2026-04-25",
+            }
+        ],
+        "documentosFaltantes": [],
+        "observaciones": [],
+        "proximosPasos": ["Revision legal", "Asignacion de almacen"],
+        "accionesDisponibles": [
+            "CONSULTAR_ESTADO",
+            "VER_HISTORIAL",
+            "VER_OBSERVACIONES",
+            "SUBIR_DOCUMENTO",
+        ],
+    },
+}
+
 
 @router.post("/admin", response_model=RespuestaGuiaAdministrador)
 async def guiar_administrador(
@@ -176,5 +221,18 @@ async def guiar_funcionario(
     return await handler(request)
 
 
+@router.post("/mobile-user", response_model=RespuestaGuiaUsuarioMovil)
+async def guiar_usuario_movil(
+    request: SolicitudGuiaUsuarioMovil = Body(
+        ...,
+        openapi_examples={"mobile_user_guide": {"value": _MOBILE_USER_GUIDE_EXAMPLE}},
+    ),
+    service: ServicioGuiaUsuarioMovil = Depends(obtener_servicio_guia_usuario_movil),
+) -> RespuestaGuiaUsuarioMovil:
+    handler = getattr(service, "guiar_usuario_movil", None) or getattr(service, "guide_mobile_user")
+    return await handler(request)
+
+
 guide_admin = guiar_administrador
 guide_employee = guiar_funcionario
+guide_mobile_user = guiar_usuario_movil

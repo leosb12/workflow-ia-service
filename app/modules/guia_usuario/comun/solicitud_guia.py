@@ -6,6 +6,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 class RolGuia(str, Enum):
     ADMIN = "ADMIN"
     EMPLOYEE = "EMPLOYEE"
+    USUARIO_MOVIL = "MOBILE_USER"
 
 
 class PantallaGuia(str, Enum):
@@ -22,6 +23,14 @@ class PantallaGuia(str, Enum):
     TASK_FORM = "TASK_FORM"
     TASK_HISTORY = "TASK_HISTORY"
     GENERAL_ADMIN = "GENERAL_ADMIN"
+    INICIO_USUARIO = "INICIO_USUARIO"
+    LISTA_TRAMITES = "LISTA_TRAMITES"
+    DETALLE_TRAMITE = "DETALLE_TRAMITE"
+    ESTADO_TRAMITE = "ESTADO_TRAMITE"
+    FORMULARIO_SOLICITUD = "FORMULARIO_SOLICITUD"
+    PERFIL_USUARIO = "PERFIL_USUARIO"
+    NOTIFICACIONES = "NOTIFICACIONES"
+    GENERAL_USUARIO_MOVIL = "GENERAL_USUARIO_MOVIL"
 
 
 class ContextoProblemaDetectadoGuia(BaseModel):
@@ -226,3 +235,81 @@ EmployeeDashboardSummaryContext = ContextoResumenPanelFuncionario
 EmployeeTaskQueueItemContext = ContextoElementoColaTareaFuncionario
 EmployeeGuideContext = ContextoGuiaFuncionario
 EmployeeGuideRequest = SolicitudGuiaFuncionario
+
+
+class ContextoEtapaActualGuiaUsuarioMovil(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    identificador: str | None = Field(default=None, alias="id")
+    nombre: str | None = None
+    descripcion: str | None = None
+    departamento: str | None = None
+    responsable: str | None = None
+    tiempo_estimado: str | None = Field(default=None, alias="tiempoEstimado")
+
+
+class ContextoResumenProgresoGuiaUsuarioMovil(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    pasos_completados: int = Field(default=0, alias="pasosCompletados")
+    paso_actual: str | None = Field(default=None, alias="pasoActual")
+    pasos_pendientes: int = Field(default=0, alias="pasosPendientes")
+    porcentaje_avance: int = Field(default=0, alias="porcentajeAvance")
+
+
+class ContextoHistorialGuiaUsuarioMovil(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    etapa: str | None = None
+    estado: str | None = None
+    fecha: str | None = None
+    detalle: str | None = None
+    responsable: str | None = None
+
+
+class ContextoGuiaUsuarioMovil(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    tramite_id: str | None = Field(default=None, alias="tramiteId")
+    politica_id: str | None = Field(default=None, alias="politicaId")
+    nombre_politica: str | None = Field(default=None, alias="nombrePolitica")
+    estado_tramite: str | None = Field(default=None, alias="estadoTramite")
+    etapa_actual: ContextoEtapaActualGuiaUsuarioMovil | None = Field(
+        default=None,
+        alias="etapaActual",
+    )
+    resumen_progreso: ContextoResumenProgresoGuiaUsuarioMovil | None = Field(
+        default=None,
+        alias="resumenProgreso",
+    )
+    historial: list[ContextoHistorialGuiaUsuarioMovil] = Field(default_factory=list)
+    documentos_faltantes: list[str] = Field(default_factory=list, alias="documentosFaltantes")
+    observaciones: list[str] = Field(default_factory=list)
+    proximos_pasos: list[str] = Field(default_factory=list, alias="proximosPasos")
+    acciones_disponibles: list[str] = Field(default_factory=list, alias="accionesDisponibles")
+
+
+class SolicitudGuiaUsuarioMovil(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    usuario_id: str = Field(alias="userId")
+    nombre_usuario: str | None = Field(default=None, alias="userName")
+    rol: RolGuia = Field(default=RolGuia.USUARIO_MOVIL, alias="role")
+    pantalla: PantallaGuia = Field(alias="screen")
+    pregunta: str = Field(alias="question")
+    contexto: ContextoGuiaUsuarioMovil = Field(default_factory=ContextoGuiaUsuarioMovil, alias="context")
+
+    @field_validator("pregunta")
+    @classmethod
+    def validate_mobile_user_question(cls, value: str) -> str:
+        normalized = " ".join((value or "").split())
+        if not normalized:
+            raise ValueError("question no puede estar vacia")
+        return normalized[:500]
+
+
+MobileUserCurrentStageContext = ContextoEtapaActualGuiaUsuarioMovil
+MobileUserProgressSummaryContext = ContextoResumenProgresoGuiaUsuarioMovil
+MobileUserHistoryItemContext = ContextoHistorialGuiaUsuarioMovil
+MobileUserGuideContext = ContextoGuiaUsuarioMovil
+MobileUserGuideRequest = SolicitudGuiaUsuarioMovil

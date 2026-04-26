@@ -36,6 +36,23 @@ class IntencionGuiaFuncionario(str, Enum):
     GENERAL_EMPLOYEE_HELP = "GENERAL_EMPLOYEE_HELP"
 
 
+class IntencionGuiaUsuarioMovil(str, Enum):
+    EXPLICAR_PANTALLA = "EXPLICAR_PANTALLA"
+    QUE_PUEDO_HACER_AQUI = "QUE_PUEDO_HACER_AQUI"
+    EXPLICAR_ESTADO_TRAMITE = "EXPLICAR_ESTADO_TRAMITE"
+    EXPLICAR_PROGRESO_TRAMITE = "EXPLICAR_PROGRESO_TRAMITE"
+    EXPLICAR_ETAPA_ACTUAL = "EXPLICAR_ETAPA_ACTUAL"
+    EXPLICAR_HISTORIAL = "EXPLICAR_HISTORIAL"
+    EXPLICAR_DOCUMENTOS_FALTANTES = "EXPLICAR_DOCUMENTOS_FALTANTES"
+    EXPLICAR_OBSERVACIONES = "EXPLICAR_OBSERVACIONES"
+    EXPLICAR_RECHAZO = "EXPLICAR_RECHAZO"
+    EXPLICAR_PROXIMO_PASO = "EXPLICAR_PROXIMO_PASO"
+    AYUDA_INICIAR_TRAMITE = "AYUDA_INICIAR_TRAMITE"
+    AYUDA_SUBIR_DOCUMENTO = "AYUDA_SUBIR_DOCUMENTO"
+    GUIA_PASO_A_PASO = "GUIA_PASO_A_PASO"
+    AYUDA_GENERAL_USUARIO_MOVIL = "AYUDA_GENERAL_USUARIO_MOVIL"
+
+
 class SeveridadGuia(str, Enum):
     INFO = "INFO"
     WARNING = "WARNING"
@@ -142,3 +159,26 @@ EmployeeFormHelp = AyudaFormularioFuncionario
 EmployeeMissingField = CampoFaltanteFuncionario
 EmployeePrioritySuggestion = SugerenciaPrioridadFuncionario
 EmployeeGuideResponse = RespuestaGuiaFuncionario
+
+
+class RespuestaGuiaUsuarioMovil(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    respuesta: str = Field(alias="answer")
+    pasos: list[str] = Field(default_factory=list, alias="steps")
+    estado_explicado: str | None = Field(default=None, alias="estadoExplicado")
+    progreso_explicado: str | None = Field(default=None, alias="progresoExplicado")
+    documentos_faltantes: list[str] = Field(default_factory=list, alias="documentosFaltantes")
+    proximos_pasos: list[str] = Field(default_factory=list, alias="proximosPasos")
+    acciones_sugeridas: list[AccionSugerida] = Field(default_factory=list, alias="accionesSugeridas")
+    severidad: SeveridadGuia = Field(default=SeveridadGuia.INFO, alias="severity")
+    intencion: IntencionGuiaUsuarioMovil = Field(
+        default=IntencionGuiaUsuarioMovil.AYUDA_GENERAL_USUARIO_MOVIL,
+        alias="intent",
+    )
+    fuente: str = Field(default="HEURISTIC", alias="source")
+    disponible: bool = Field(default=True, alias="available")
+
+
+MobileUserGuideIntent = IntencionGuiaUsuarioMovil
+MobileUserGuideResponse = RespuestaGuiaUsuarioMovil
