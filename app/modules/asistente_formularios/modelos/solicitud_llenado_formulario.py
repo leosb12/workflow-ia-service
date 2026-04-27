@@ -1,3 +1,4 @@
+import unicodedata
 from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
@@ -8,13 +9,45 @@ class FormFieldSchema(BaseModel):
     label: str = Field(min_length=1, max_length=200)
     type: Literal["text", "textarea", "number", "boolean", "select", "date", "file"]
     required: bool
-    options: list[str] = Field(default_factory=list)
+    options: list[str] | None = Field(default_factory=list)
 
     model_config = ConfigDict(extra="forbid")
 
-    @field_validator("options")
+    @field_validator("type", mode="before")
     @classmethod
-    def validate_options(cls, value: list[str]) -> list[str]:
+    def normalize_type(cls, value: Any) -> Any:
+        if not isinstance(value, str):
+            return value
+
+        normalized = unicodedata.normalize("NFKD", value.strip().lower())
+        normalized = normalized.encode("ascii", "ignore").decode("ascii")
+
+        aliases = {
+            "text": "text",
+            "texto": "text",
+            "textarea": "textarea",
+            "number": "number",
+            "numero": "number",
+            "numeric": "number",
+            "boolean": "boolean",
+            "bool": "boolean",
+            "booleano": "boolean",
+            "select": "select",
+            "dropdown": "select",
+            "lista": "select",
+            "opcion": "select",
+            "date": "date",
+            "fecha": "date",
+            "file": "file",
+            "archivo": "file",
+        }
+        return aliases.get(normalized, normalized)
+
+    @field_validator("options", mode="before")
+    @classmethod
+    def validate_options(cls, value: Any) -> list[str]:
+        if value is None:
+            return []
         return [item.strip() for item in value if item and item.strip()]
 
     @model_validator(mode="after")
