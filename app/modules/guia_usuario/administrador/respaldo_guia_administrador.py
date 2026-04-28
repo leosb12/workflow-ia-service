@@ -45,6 +45,10 @@ class RespaldoGuiaAdministrador:
         request: SolicitudGuiaAdministrador,
         intent: IntencionGuiaAdministrador,
     ) -> RespuestaGuiaAdministrador:
+        special_response = self._build_special_response(request, intent)
+        if special_response is not None:
+            return special_response
+
         issues = self._detect_issues(request.context.policy_summary, request.context.detected_issues)
         suggested_actions = self._build_suggested_actions(request, issues)
         selected_node = request.context.selected_node
@@ -141,6 +145,15 @@ class RespaldoGuiaAdministrador:
                 "Crea una politica nueva o abre un borrador existente.",
                 "Entra al disenador para completar nodos, responsables y formularios.",
                 "Valida el flujo antes de activar.",
+            ]
+        elif screen == PantallaGuia.PERFIL_USUARIO:
+            answer = (
+                "Estas en tu perfil. Aqui puedes revisar los datos de tu cuenta y cambiar tu contrasena."
+            )
+            steps = [
+                "Revisa la informacion de tu cuenta.",
+                "Entra a la seccion de seguridad.",
+                "Cambia tu contrasena si necesitas reforzar el acceso.",
             ]
         else:
             answer = self._build_general_help_answer(request)
@@ -612,6 +625,60 @@ class RespaldoGuiaAdministrador:
 
     def _normalize(self, value: str | None) -> str:
         return " ".join((value or "").lower().split())
+
+    def _build_special_response(
+        self,
+        request: SolicitudGuiaAdministrador,
+        intent: IntencionGuiaAdministrador,
+    ) -> RespuestaGuiaAdministrador | None:
+        normalized_question = self._normalize(request.question)
+
+        if self._contains_any(
+            normalized_question,
+            ["olvide mi contrasena", "olvide la contrasena", "no recuerdo mi contrasena"],
+        ):
+            return RespuestaGuiaAdministrador(
+                answer=(
+                    "Si olvidaste tu contrasena, en la pantalla de login debes presionar "
+                    "'Olvidaste tu contrasena?' para iniciar la recuperacion."
+                ),
+                steps=[
+                    "Ve a la pantalla de login.",
+                    "Presiona 'Olvidaste tu contrasena?'.",
+                    "Sigue el proceso de recuperacion para restablecer el acceso.",
+                ],
+                detectedIssues=[],
+                suggestedActions=[],
+                severity=SeveridadGuia.INFO,
+                intent=intent,
+            )
+
+        if self._contains_any(
+            normalized_question,
+            [
+                "cambiar contrasena",
+                "cambio de contrasena",
+                "donde cambio mi contrasena",
+                "donde cambiar contrasena",
+            ],
+        ):
+            return RespuestaGuiaAdministrador(
+                answer="Para cambiar tu contrasena, entra a tu perfil.",
+                steps=[
+                    "Abre tu perfil.",
+                    "Entra a la seccion de seguridad.",
+                    "Ingresa tu contrasena actual y la nueva contrasena.",
+                ],
+                detectedIssues=[],
+                suggestedActions=[],
+                severity=SeveridadGuia.INFO,
+                intent=intent,
+            )
+
+        return None
+
+    def _contains_any(self, text: str, options: list[str]) -> bool:
+        return any(option in text for option in options)
 
     build_response = construir_respuesta
 

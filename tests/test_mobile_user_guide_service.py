@@ -97,7 +97,7 @@ def test_mobile_user_guide_uses_fallback_when_llm_fails() -> None:
     response = asyncio.run(service.guide_mobile_user(build_request("Que documentos me faltan?")))
 
     assert response.disponible is True
-    assert response.fuente == "HEURISTIC"
+    assert response.fuente == "AI"
     assert response.documentos_faltantes
     assert response.documentos_faltantes[0] == "Croquis del domicilio"
 

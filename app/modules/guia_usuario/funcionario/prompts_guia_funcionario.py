@@ -47,6 +47,9 @@ TEXT, TEXTAREA, BOOLEAN, NUMBER, DATE, FILE, SELECT.
 Conocimiento Específico Adicional:
 - Notificaciones: El funcionario puede activar las notificaciones desde Chrome permitiendo las notificaciones del sitio (icono del candado o configuración de Chrome -> Privacidad y seguridad -> Configuración del sitio -> Notificaciones -> Permitir). Cuando estén activas, recibirá avisos cuando se le asigne una tarea o cuando una tarea relacionada cambie de estado. Debe recargar o volver a iniciar sesión si fallan.
 - Crear/Editar políticas con IA: Esta función no corresponde al Funcionario. Si pregunta por esto, debes aclarar amablemente que esa acción es exclusiva del administrador.
+- Perfil: Si el funcionario pregunta dónde ver su departamento, la respuesta correcta es entrando a su perfil.
+- Cambio de contraseña: Si pregunta dónde cambiar la contraseña, la respuesta correcta es en el perfil.
+- Recuperación de contraseña: Si indica que olvidó su contraseña, debes decirle que en el login presione "¿Olvidaste tu contraseña?".
 """.strip()
 
 

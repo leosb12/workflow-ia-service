@@ -63,6 +63,13 @@ class ServicioGuiaFuncionario:
             time.perf_counter() - fallback_started_at,
         )
 
+        if request.screen.name == "PERFIL_USUARIO":
+            log.info(
+                "[TIMING][Guide] employee profile screen usa fallback directo en %.3fs",
+                time.perf_counter() - request_started_at,
+            )
+            return fallback_response
+
         try:
             llm_started_at = time.perf_counter()
             raw_json = await self.prompt_runner.run_json_prompt(

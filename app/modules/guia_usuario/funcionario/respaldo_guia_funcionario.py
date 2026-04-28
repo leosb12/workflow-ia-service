@@ -24,6 +24,10 @@ class RespaldoGuiaFuncionario:
         request: EmployeeGuideRequest,
         intent: EmployeeGuideIntent,
     ) -> EmployeeGuideResponse:
+        special_response = self._build_special_response(request, intent)
+        if special_response is not None:
+            return special_response
+
         missing_fields = self._build_missing_fields(request.context.form)
         form_help = self._build_form_help(request.context.form)
         priority_suggestion = self._build_priority_suggestion(request)
@@ -253,6 +257,12 @@ class RespaldoGuiaFuncionario:
         return actions[:5]
 
     def _build_screen_answer(self, request: EmployeeGuideRequest) -> str:
+        if request.screen == GuideScreen.PERFIL_USUARIO:
+            return (
+                "Estas en tu perfil. Aqui puedes revisar los datos de tu cuenta, ver tu departamento "
+                "y cambiar tu contrasena."
+            )
+
         if request.screen == GuideScreen.EMPLOYEE_DASHBOARD:
             summary = request.context.dashboard_summary
             pending = summary.pending_tasks if summary else 0
@@ -285,6 +295,13 @@ class RespaldoGuiaFuncionario:
         request: EmployeeGuideRequest,
         intent: EmployeeGuideIntent,
     ) -> list[str]:
+        if request.screen == GuideScreen.PERFIL_USUARIO:
+            return [
+                "Revisa el resumen de tu cuenta.",
+                "Consulta tu departamento dentro del perfil.",
+                "Usa la seccion de seguridad para cambiar tu contrasena.",
+            ]
+
         if request.screen == GuideScreen.EMPLOYEE_DASHBOARD:
             steps = [
                 "Revisa primero las tareas atrasadas o con prioridad alta.",
@@ -517,6 +534,82 @@ class RespaldoGuiaFuncionario:
         if field_type == "NUMBER":
             return f"Completa {label} con un valor numérico válido."
         return f"Completa {label} con la información solicitada para esta actividad."
+    def _build_special_response(
+        self,
+        request: EmployeeGuideRequest,
+        intent: EmployeeGuideIntent,
+    ) -> EmployeeGuideResponse | None:
+        normalized_question = self._normalize(request.question)
+
+        if self._contains_any(
+            normalized_question,
+            ["olvide mi contrasena", "olvide la contrasena", "no recuerdo mi contrasena"],
+        ):
+            return EmployeeGuideResponse(
+                answer=(
+                    "Si olvidaste tu contrasena, en la pantalla de login debes presionar "
+                    "'Olvidaste tu contrasena?' para iniciar la recuperacion."
+                ),
+                steps=[
+                    "Ve a la pantalla de login.",
+                    "Presiona 'Olvidaste tu contrasena?'.",
+                    "Sigue los pasos de recuperacion para restablecer el acceso.",
+                ],
+                suggestedActions=[],
+                severity=GuideSeverity.INFO,
+                intent=intent,
+            )
+
+        if self._contains_any(
+            normalized_question,
+            [
+                "cambiar contrasena",
+                "cambio de contrasena",
+                "donde cambio mi contrasena",
+                "donde cambiar contrasena",
+            ],
+        ):
+            return EmployeeGuideResponse(
+                answer="El cambio de contrasena se realiza entrando a tu perfil.",
+                steps=[
+                    "Abre tu perfil.",
+                    "Entra a la seccion de seguridad.",
+                    "Completa tu contrasena actual y la nueva contrasena.",
+                ],
+                suggestedActions=[],
+                severity=GuideSeverity.INFO,
+                intent=intent,
+            )
+
+        if self._contains_any(
+            normalized_question,
+            [
+                "mi departamento",
+                "ver mi departamento",
+                "donde veo mi departamento",
+                "cual es mi departamento",
+            ],
+        ):
+            return EmployeeGuideResponse(
+                answer="Para ver tu departamento, entra a tu perfil. Ahi aparece en el resumen de tu cuenta.",
+                steps=[
+                    "Abre tu perfil.",
+                    "Busca el resumen de tu cuenta.",
+                    "Revisa el campo Departamento.",
+                ],
+                suggestedActions=[],
+                severity=GuideSeverity.INFO,
+                intent=intent,
+            )
+
+        return None
+
+    def _contains_any(self, text: str, options: list[str]) -> bool:
+        return any(option in text for option in options)
+
+    def _normalize(self, value: str | None) -> str:
+        return " ".join((value or "").lower().split())
+
     build_response = construir_respuesta
 
 

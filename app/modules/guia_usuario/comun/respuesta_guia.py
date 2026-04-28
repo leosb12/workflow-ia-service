@@ -107,7 +107,7 @@ class RespuestaGuiaAdministrador(BaseModel):
     suggested_actions: list[AccionSugerida] = Field(default_factory=list, alias="suggestedActions")
     severity: SeveridadGuia = SeveridadGuia.INFO
     intent: IntencionGuiaAdministrador = IntencionGuiaAdministrador.GENERAL_ADMIN_HELP
-    source: str = "HEURISTIC"
+    source: str = "AI"
     available: bool = True
 
 
@@ -147,7 +147,7 @@ class RespuestaGuiaFuncionario(BaseModel):
     suggested_actions: list[AccionSugerida] = Field(default_factory=list, alias="suggestedActions")
     severity: SeveridadGuia = SeveridadGuia.INFO
     intent: IntencionGuiaFuncionario = IntencionGuiaFuncionario.GENERAL_EMPLOYEE_HELP
-    source: str = "HEURISTIC"
+    source: str = "AI"
     available: bool = True
 
 
@@ -180,7 +180,7 @@ class RespuestaGuiaUsuarioMovil(BaseModel):
         default=IntencionGuiaUsuarioMovil.AYUDA_GENERAL_USUARIO_MOVIL,
         alias="intent",
     )
-    fuente: str = Field(default="HEURISTIC", alias="source")
+    fuente: str = Field(default="AI", alias="source")
     disponible: bool = Field(default=True, alias="available")
 
 

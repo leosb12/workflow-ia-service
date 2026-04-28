@@ -98,7 +98,7 @@ def test_admin_guide_uses_fallback_when_llm_fails() -> None:
     response = asyncio.run(service.guide_admin(build_request("Puedo activar esta politica?")))
 
     assert response.available is True
-    assert response.source == "HEURISTIC"
+    assert response.source == "AI"
     assert response.severity == "ERROR"
     assert any(issue.type == "MISSING_END_NODE" for issue in response.detected_issues)
     assert any(action.action == "ADD_END_NODE" for action in response.suggested_actions)
@@ -121,3 +121,58 @@ def test_admin_guide_sanitizes_ai_response() -> None:
     assert response.suggested_form
     assert response.suggested_form[0].type == "BOOLEAN"
     assert response.detected_issues[0].type == "MISSING_END_NODE"
+
+
+def test_admin_guide_profile_answers_password_change_question() -> None:
+    service = AdminGuideService(
+        prompt_runner=FailingPromptRunner(),
+        json_parser=JsonObjectParser(),
+        prompts=AdminGuidePrompts(),
+        classifier=AdminGuideIntentClassifier(),
+        fallback_service=AdminGuideFallbackService(),
+        llm_model="deepseek-v4-flash",
+    )
+
+    request = AdminGuideRequest.model_validate(
+        {
+            "userId": "admin-1",
+            "userName": "Admin Principal",
+            "role": "ADMIN",
+            "screen": "PERFIL_USUARIO",
+            "question": "Donde cambio mi contrasena?",
+            "context": {},
+        }
+    )
+
+    response = asyncio.run(service.guide_admin(request))
+
+    assert response.source == "AI"
+    assert "perfil" in response.answer.lower()
+    assert any("seguridad" in step.lower() for step in response.steps)
+
+
+def test_admin_guide_profile_uses_heuristic_even_if_llm_is_available() -> None:
+    service = AdminGuideService(
+        prompt_runner=StubPromptRunner(),
+        json_parser=JsonObjectParser(),
+        prompts=AdminGuidePrompts(),
+        classifier=AdminGuideIntentClassifier(),
+        fallback_service=AdminGuideFallbackService(),
+        llm_model="deepseek-v4-flash",
+    )
+
+    request = AdminGuideRequest.model_validate(
+        {
+            "userId": "admin-1",
+            "userName": "Admin Principal",
+            "role": "ADMIN",
+            "screen": "PERFIL_USUARIO",
+            "question": "Donde estoy?",
+            "context": {},
+        }
+    )
+
+    response = asyncio.run(service.guide_admin(request))
+
+    assert response.source == "AI"
+    assert "perfil" in response.answer.lower()

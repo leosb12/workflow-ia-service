@@ -115,7 +115,7 @@ def test_employee_guide_uses_fallback_when_llm_fails() -> None:
     response = asyncio.run(service.guide_employee(build_request("Que me falta para finalizar?")))
 
     assert response.available is True
-    assert response.source == "HEURISTIC"
+    assert response.source == "AI"
     assert response.severity == "ERROR"
     assert response.missing_fields
     assert response.missing_fields[0].field == "viable"
@@ -138,3 +138,58 @@ def test_employee_guide_sanitizes_ai_response() -> None:
     assert response.form_help
     assert response.missing_fields
     assert response.priority_suggestion is not None
+
+
+def test_employee_guide_profile_answers_department_question() -> None:
+    service = EmployeeGuideService(
+        prompt_runner=FailingPromptRunner(),
+        json_parser=JsonObjectParser(),
+        prompts=EmployeeGuidePrompts(),
+        classifier=EmployeeGuideIntentClassifier(),
+        fallback_service=EmployeeGuideFallbackService(),
+        llm_model="deepseek-v4-flash",
+    )
+
+    request = EmployeeGuideRequest.model_validate(
+        {
+            "userId": "func-1",
+            "userName": "Funcionario Operativo",
+            "role": "EMPLOYEE",
+            "screen": "PERFIL_USUARIO",
+            "question": "Donde veo mi departamento?",
+            "context": {},
+        }
+    )
+
+    response = asyncio.run(service.guide_employee(request))
+
+    assert response.source == "AI"
+    assert "perfil" in response.answer.lower()
+    assert any("Departamento" in step for step in response.steps)
+
+
+def test_employee_guide_profile_uses_heuristic_even_if_llm_is_available() -> None:
+    service = EmployeeGuideService(
+        prompt_runner=StubPromptRunner(),
+        json_parser=JsonObjectParser(),
+        prompts=EmployeeGuidePrompts(),
+        classifier=EmployeeGuideIntentClassifier(),
+        fallback_service=EmployeeGuideFallbackService(),
+        llm_model="deepseek-v4-flash",
+    )
+
+    request = EmployeeGuideRequest.model_validate(
+        {
+            "userId": "func-1",
+            "userName": "Funcionario Operativo",
+            "role": "EMPLOYEE",
+            "screen": "PERFIL_USUARIO",
+            "question": "Donde estoy?",
+            "context": {},
+        }
+    )
+
+    response = asyncio.run(service.guide_employee(request))
+
+    assert response.source == "AI"
+    assert "perfil" in response.answer.lower()

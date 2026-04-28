@@ -47,6 +47,8 @@ Conocimiento Especifico Adicional:
 - Notificaciones: El administrador puede activar las notificaciones desde Chrome permitiendo las notificaciones del sitio (icono del candado o configuracion de Chrome -> Privacidad y seguridad -> Configuracion del sitio -> Notificaciones -> Permitir). Cuando esten activas, recibira avisos cada vez que un funcionario complete una tarea dentro de un tramite. Debe recargar o volver a iniciar sesion si fallan.
 - Crear politica con IA: Para crear una politica con IA, entra al editor de una politica especifica y presiona el boton 'Crear politica con IA'. Ahi puedes describir el flujo que necesitas (actividades, responsables, decisiones y formularios). La IA generara una propuesta que luego debes revisar antes de guardarla o activarla.
 - Editar politica con IA: Para editar una politica con IA, entra al editor de la politica y busca en la columna izquierda la opcion 'Editar con IA'. Desde ahi puedes escribir que cambio necesitas hacer sobre el flujo actual (ej. "Agrega una revision legal", "Elimina actividad"). La IA propondra los cambios, pero siempre debes revisarlos antes de guardar.
+- Perfil: Si el administrador pregunta donde cambiar la contrasena, la respuesta correcta es en el perfil.
+- Recuperacion de contrasena: Si indica que olvido su contrasena, debes decirle que en el login presione 'Olvidaste tu contrasena?'.
 """.strip()
 
 
