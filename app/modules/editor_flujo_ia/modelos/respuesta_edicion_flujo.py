@@ -11,6 +11,7 @@ TipoOperacionEdicion = Literal[
     "UPDATE_TRANSITION",
     "DELETE_TRANSITION",
     "ASSIGN_RESPONSIBLE",
+    "REMOVE_RESPONSIBLE",
     "UPDATE_FORM",
     "ADD_FORM_FIELD",
     "DELETE_FORM_FIELD",
@@ -18,6 +19,7 @@ TipoOperacionEdicion = Literal[
     "CREATE_LOOP",
     "UPDATE_DECISION_CONDITION",
     "MOVE_NODE",
+    "REORDER_FLOW",
     "ADD_BUSINESS_RULE",
     "DELETE_BUSINESS_RULE",
 ]
@@ -57,7 +59,7 @@ class OperacionEdicionFlujo(BaseModel):
     condition: str | None = None
     responsible_role_id: str | None = Field(default=None, alias="responsibleRoleId")
     responsible_role_name: str | None = Field(default=None, alias="responsibleRoleName")
-    responsible_type: Literal["department", "initiator"] | None = Field(default=None, alias="responsibleType")
+    responsible_type: Literal["department", "user", "initiator"] | None = Field(default=None, alias="responsibleType")
     department_hint: str | None = Field(default=None, alias="departmentHint")
     form_id: str | None = Field(default=None, alias="formId")
     form_name: str | None = Field(default=None, alias="formName")
@@ -114,4 +116,3 @@ class RespuestaEdicionFlujo(BaseModel):
 
 WorkflowEditOperation = OperacionEdicionFlujo
 WorkflowEditResponse = RespuestaEdicionFlujo
-

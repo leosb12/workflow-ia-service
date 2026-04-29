@@ -332,3 +332,55 @@ def test_reconnect_transition_uses_selected_and_target_node_context() -> None:
     assert response.operations[0].to_node_name == "Aprobar solicitud"
     assert response.operations[1].from_node_name == "Validar documentos"
     assert response.operations[1].to_node_name == "Notificar resultado"
+
+
+def test_dynamic_form_add_and_delete_fields_in_same_prompt() -> None:
+    response = run_prompt(
+        "En la actividad Revisar solicitud agrega un campo obligatorio tipo archivo llamado Comprobante de pago "
+        "y elimina el campo Observacion."
+    )
+
+    assert response.success is True
+    assert response.errors == []
+    assert [operation.type for operation in response.operations] == ["DELETE_FORM_FIELD", "ADD_FORM_FIELD"]
+    assert response.operations[0].node_name == "Revisar solicitud"
+    assert response.operations[0].field_label == "Observacion"
+    assert response.operations[1].node_name == "Revisar solicitud"
+    assert response.operations[1].field_label == "Comprobante de pago"
+    assert response.operations[1].field_type == "file"
+    assert response.operations[1].required is True
+
+
+def test_dynamic_form_boolean_field_with_question_prompt() -> None:
+    response = run_backend_workflow_prompt(
+        "anadime el campo booleano al formulario dinamico de la actividad: Validar datos "
+        "para que pregunte si necesita algo mas"
+    )
+
+    assert response.success is True
+    assert response.errors == []
+    assert response.operations[0].type == "ADD_FORM_FIELD"
+    assert response.operations[0].node_name == "Validar datos"
+    assert response.operations[0].field_label == "necesita algo mas"
+    assert response.operations[0].field_type == "boolean"
+
+
+def test_parallel_fork_infers_legal_and_finance_branches() -> None:
+    response = run_prompt_with_context(
+        "Agrega un fork para que Legal y Finanzas trabajen en paralelo",
+        {"selectedNode": {"id": "revisar", "name": "Revisar solicitud"}},
+    )
+
+    assert response.success is True
+    assert response.errors == []
+    assert [operation.type for operation in response.operations] == [
+        "ADD_NODE",
+        "ADD_NODE",
+        "ADD_TRANSITION",
+        "ADD_NODE",
+        "ADD_TRANSITION",
+    ]
+    assert response.operations[0].node_type == "parallel_start"
+    assert response.operations[1].node_name == "Revision Legal"
+    assert response.operations[1].payload["autoConnect"] is False
+    assert response.operations[3].node_name == "Revision Finanzas"

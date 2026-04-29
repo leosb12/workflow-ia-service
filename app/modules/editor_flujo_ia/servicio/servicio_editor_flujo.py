@@ -127,6 +127,18 @@ class ServicioEditorFlujoIa:
         if operations:
             return operations, warnings
 
+        operation = self._detect_move_node(prompt, request.workflow, request.context)
+        if operation:
+            return [operation], warnings
+
+        operation = self._detect_reorder_flow(prompt, request.workflow, request.context)
+        if operation:
+            return [operation], warnings
+
+        operations = self._detect_parallel_operations(prompt, request.workflow, request.context)
+        if operations:
+            return operations, warnings
+
         operations = self._detect_insert_activity_between(prompt, request.workflow, request.context)
         if operations:
             return operations, warnings
@@ -143,9 +155,13 @@ class ServicioEditorFlujoIa:
         if operation:
             return [operation], warnings
 
-        operation = self._detect_form_update(prompt, request.workflow, request.context)
+        operation = self._detect_remove_responsible(prompt, request.workflow, request.context)
         if operation:
             return [operation], warnings
+
+        operations = self._detect_form_operations(prompt, request.workflow, request.context)
+        if operations:
+            return operations, warnings
 
         operation = self._detect_add_decision(prompt, request.workflow, request.context)
         if operation:
@@ -284,12 +300,12 @@ class ServicioEditorFlujoIa:
         context: dict[str, Any],
     ) -> OperacionEdicionFlujo | None:
         normalized = self._normalize(prompt)
-        if "transicion" not in normalized:
+        if "transicion" not in normalized and "conexion" not in normalized:
             return None
         match = self._first_match(
             prompt,
             [
-                r"\b(?:elimina|eliminar|borra|borrar|quita|quitar)\s+(?:la\s+)?transici.n\s+(?:entre|desde)\s+(?P<from>.+?)\s+(?:y|hacia|a)\s+(?P<to>.+)$",
+                r"\b(?:elimina|eliminar|borra|borrar|quita|quitar)\s+(?:la\s+)?(?:transici.n|conexi.n|conexion)\s+(?:entre|desde)\s+(?P<from>.+?)\s+(?:y|hacia|a)\s+(?P<to>.+)$",
             ],
         )
         if not match:
@@ -310,7 +326,9 @@ class ServicioEditorFlujoIa:
             prompt,
             [
                 r"\basigna\s+como\s+responsable\s+de\s+(?P<node>.+?)\s+a\s+(?P<responsible>.+)$",
+                r"\b(?:cambia|cambiar|pon|pone|asigna|asignar)\s+(?:el\s+)?responsable\s+(?:de\s+)?(?:la\s+|el\s+)?(?:actividad|nodo|tarea)?\s*(?P<node>.+?)\s+(?:a|al|por|para)\s+(?P<responsible>.+)$",
                 r"\bhaz\s+que\s+(?P<responsible>.+?)\s+sea\s+responsable\s+de\s+(?:la\s+|el\s+)?(?:actividad|nodo|tarea)?\s*(?P<node>.+)$",
+                r"\b(?:quita|quitar|elimina|eliminar)\s+el\s+responsable\s+actual\s+y\s+(?:asigna|asignalo|asignalo|pon|ponle|ponele)\s+(?:a\s+)?(?P<responsible>.+?)(?:\s+(?:en|de)\s+(?:la\s+|el\s+)?(?:actividad|nodo|tarea)\s+(?P<node>.+))?$",
             ],
         )
         if not match:
@@ -326,11 +344,328 @@ class ServicioEditorFlujoIa:
             )
         return OperacionEdicionFlujo(
             type="ASSIGN_RESPONSIBLE",
-            node_name=self._resolve_node_reference_name(self._clean_node_name(match.group("node")), workflow, context),
-            responsible_type="department",
+            node_name=self._resolve_node_reference_name(
+                self._clean_node_name(match.groupdict().get("node")) or "este nodo",
+                workflow,
+                context,
+            ),
+            responsible_type="department" if self._looks_like_department(responsible) else "user",
             responsible_role_name=responsible,
             department_hint=responsible,
         )
+
+    def _detect_remove_responsible(
+        self,
+        prompt: str,
+        workflow: dict[str, Any],
+        context: dict[str, Any],
+    ) -> OperacionEdicionFlujo | None:
+        normalized = self._normalize(prompt)
+        if "responsable" not in normalized:
+            return None
+
+        match = self._first_match(
+            prompt,
+            [
+                r"\b(?:quita|quitar|elimina|eliminar|borra|borrar)\s+(?:el\s+)?responsable\s+(?:actual\s+)?(?:de\s+)?(?:la\s+|el\s+)?(?:actividad|nodo|tarea)?\s*(?P<node>.+)?$",
+            ],
+        )
+        if not match:
+            return None
+
+        node_name = self._resolve_node_reference_name(
+            self._clean_node_name(match.groupdict().get("node")) or "este nodo",
+            workflow,
+            context,
+        )
+        if not node_name:
+            return None
+
+        return OperacionEdicionFlujo(type="REMOVE_RESPONSIBLE", node_name=node_name)
+
+    def _detect_move_node(
+        self,
+        prompt: str,
+        workflow: dict[str, Any],
+        context: dict[str, Any],
+    ) -> OperacionEdicionFlujo | None:
+        match = self._first_match(
+            prompt,
+            [
+                r"\b(?:mueve|mover|moveme|coloca|poner|pon)\s+(?:la\s+|el\s+)?(?:actividad|nodo|tarea)?\s*(?P<node>.+?)\s+(?P<position>antes|despues|despu.s)\s+de\s+(?P<reference>.+)$",
+            ],
+        )
+        if not match:
+            return None
+
+        node_name = self._resolve_node_reference_name(self._clean_node_name(match.group("node")), workflow, context)
+        reference_name = self._resolve_node_reference_name(self._clean_node_name(match.group("reference")), workflow, context)
+        if not node_name or not reference_name:
+            return None
+
+        return OperacionEdicionFlujo(
+            type="MOVE_NODE",
+            node_name=node_name,
+            reference_node_name=reference_name,
+            position="after" if self._normalize(match.group("position")) == "despues" else "before",
+        )
+
+    def _detect_reorder_flow(
+        self,
+        prompt: str,
+        workflow: dict[str, Any],
+        context: dict[str, Any],
+    ) -> OperacionEdicionFlujo | None:
+        normalized = self._normalize(prompt)
+        if "reordena" not in normalized and "ordena" not in normalized:
+            return None
+
+        match = self._first_match(
+            prompt,
+            [
+                r"\b(?:reordena|ordena)\s+(?:el\s+)?flujo\s+para\s+que\s+(?:primero\s+)?(?:pase\s+por\s+)?(?P<sequence>.+)$",
+            ],
+        )
+        if not match:
+            return None
+
+        raw_sequence = match.group("sequence")
+        parts = re.split(r"\s*,\s*|\s+luego\s+|\s+despues\s+|\s+despu.s\s+|\s+y\s+finalmente\s+|\s+y\s+", raw_sequence, flags=re.IGNORECASE)
+        node_names: list[str] = []
+        for part in parts:
+            cleaned = self._clean_node_name(
+                re.sub(r"^(?:por|a|al|la|el|primero)\s+", "", part.strip(), flags=re.IGNORECASE)
+            )
+            if not cleaned:
+                continue
+            resolved = self._resolve_node_reference_name(cleaned, workflow, context)
+            if resolved:
+                node_names.append(resolved)
+
+        deduped = self._deduplicate(node_names)
+        if len(deduped) < 2:
+            return None
+
+        return OperacionEdicionFlujo(
+            type="REORDER_FLOW",
+            payload={"nodeNames": deduped},
+            description="Reordenar el flujo segun la secuencia solicitada.",
+        )
+
+    def _detect_form_operations(
+        self,
+        prompt: str,
+        workflow: dict[str, Any],
+        context: dict[str, Any],
+    ) -> list[OperacionEdicionFlujo]:
+        normalized = self._normalize(prompt)
+        if "formulario" not in normalized and "campo" not in normalized:
+            return []
+
+        node_name = self._extract_form_node_name(prompt, workflow, context)
+        if not node_name:
+            return []
+
+        operations: list[OperacionEdicionFlujo] = []
+
+        delete_match = self._first_match(
+            prompt,
+            [
+                r"\b(?:elimina|eliminar|borra|borrar|quita|quitar)\s+(?:el\s+)?campo\s+(?P<field>.+?)(?:\s+(?:del|de\s+el|en\s+el)\s+(?:formulario|frormulario)|[. ]*$)",
+            ],
+        )
+        if delete_match:
+            field_label = self._clean_field_label(delete_match.group("field"))
+            if field_label:
+                operations.append(
+                    OperacionEdicionFlujo(
+                        type="DELETE_FORM_FIELD",
+                        node_name=node_name,
+                        field_label=field_label,
+                    )
+                )
+
+        update_match = self._first_match(
+            prompt,
+            [
+                r"\b(?:modifica|modificar|modificame|cambia|cambiar|renombra|renombrar)\s+(?:el\s+)?campo\s+[\"']?(?P<field>.+?)[\"']?\s+(?:del|de\s+el|en\s+el)\s+(?:formulario|frormulario).*?(?:pon(?:e)?le|a|por|como)\s+[\"']?(?P<new>.+?)[\"']?$",
+                r"\b(?:cambia|cambiar)\s+(?:el\s+)?tipo\s+(?:del\s+)?campo\s+(?P<field>.+?)\s+a\s+(?P<type>texto|numero|n.mero|fecha|archivo|file|booleano|checkbox|si\/no|textarea)$",
+            ],
+        )
+        if update_match:
+            field_label = self._clean_field_label(update_match.group("field"))
+            new_name = self._clean_field_label(update_match.groupdict().get("new"))
+            field_type = self._infer_field_type(update_match.groupdict().get("type") or update_match.groupdict().get("new") or "")
+            if field_label and (new_name or field_type):
+                operations.append(
+                    OperacionEdicionFlujo(
+                        type="UPDATE_FORM",
+                        node_name=node_name,
+                        field_label=field_label,
+                        new_name=new_name or None,
+                        field_type=field_type,
+                    )
+                )
+
+        add_operations = self._detect_add_form_field_operations(prompt, node_name)
+        operations.extend(add_operations)
+
+        return operations
+
+    def _detect_add_form_field_operations(self, prompt: str, node_name: str) -> list[OperacionEdicionFlujo]:
+        normalized = self._normalize(prompt)
+        if not any(token in normalized for token in ["agrega", "agregar", "anade", "anadir", "anadime", "crea", "crear"]):
+            return []
+        if "campo" not in normalized:
+            return []
+
+        raw_segment = ""
+        called_match = self._first_match(
+            prompt,
+            [
+                r"\bcampo\s+(?:obligatori[oa]\s+)?(?:tipo\s+)?(?P<type>texto|numero|n.mero|fecha|archivo|file|booleano|checkbox|si\/no|textarea)?\s*(?:llamado|llamada|nombre|que\s+se\s+llame)\s+[\"']?(?P<field>.+?)[\"']?(?:\s+(?:obligatorio|obligatoria|opcional))?(?:\s+(?:al|en|del|de\s+el)\s+(?:formulario|frormulario)|\s+y\s+(?:elimina|eliminar|quita|quitar|borra|borrar|modifica|modificar|cambia|cambiar)\b|$)",
+                r"\bcampo\s+(?P<type>texto|numero|n.mero|fecha|archivo|file|booleano|checkbox|si\/no|textarea)?\s*(?:llamado|llamada|nombre|que\s+se\s+llame)\s+[\"']?(?P<field>.+?)[\"']?(?:\s+(?:obligatorio|obligatoria|opcional))?(?:\s+(?:al|en|del|de\s+el)\s+(?:formulario|frormulario)|\s+y\s+(?:elimina|eliminar|quita|quitar|borra|borrar|modifica|modificar|cambia|cambiar)\b|$)",
+                r"\bcampo\s+(?P<type>texto|numero|n.mero|fecha|archivo|file|booleano|checkbox|si\/no|textarea)\s+(?:al|en|del|de\s+el)\s+(?:formulario|frormulario).*?(?:para\s+que\s+pregunte\s+(?:si\s+)?|preguntando\s+si\s+)(?P<field>.+)$",
+            ],
+        )
+        if called_match:
+            field_label = self._clean_field_label(called_match.group("field"))
+            field_type = self._infer_field_type(called_match.groupdict().get("type") or field_label)
+            return [
+                OperacionEdicionFlujo(
+                    type="ADD_FORM_FIELD",
+                    node_name=node_name,
+                    field_label=field_label,
+                    field_type=field_type,
+                    required="opcional" not in normalized and "no obligatorio" not in normalized,
+                )
+            ] if field_label else []
+
+        segment_match = self._first_match(
+            prompt,
+            [
+                r"\b(?:campos?|campo)\s+(?P<fields>.+?)(?:\s+(?:al|en|del|de\s+el)\s+(?:formulario|frormulario)|\s+del\s+nodo|\s+de\s+la\s+actividad|\s+de\s+el\s+nodo|$)",
+            ],
+        )
+        if segment_match:
+            raw_segment = segment_match.group("fields")
+
+        if not raw_segment:
+            return []
+
+        raw_segment = re.sub(r"\bobligatori[oa]s?\b", "", raw_segment, flags=re.IGNORECASE)
+        raw_segment = re.sub(r"\bopcional(?:es)?\b", "", raw_segment, flags=re.IGNORECASE)
+        parts = [
+            part.strip()
+            for part in re.split(r"\s*,\s*|\s+y\s+|\s+e\s+", raw_segment, flags=re.IGNORECASE)
+            if part.strip()
+        ]
+
+        operations: list[OperacionEdicionFlujo] = []
+        for part in parts:
+            if any(token in self._normalize(part) for token in ["elimina", "eliminar", "quita", "quitar", "borra", "borrar"]):
+                continue
+            field_label = self._clean_field_label(part)
+            field_type = self._infer_field_type(part)
+            if not field_label:
+                continue
+            operations.append(
+                OperacionEdicionFlujo(
+                    type="ADD_FORM_FIELD",
+                    node_name=node_name,
+                    field_label=field_label,
+                    field_type=field_type,
+                    required="opcional" not in self._normalize(part),
+                )
+            )
+        return operations
+
+    def _detect_parallel_operations(
+        self,
+        prompt: str,
+        workflow: dict[str, Any],
+        context: dict[str, Any],
+    ) -> list[OperacionEdicionFlujo]:
+        normalized = self._normalize(prompt)
+        workflow_context = _WorkflowContext(workflow)
+
+        if "join" in normalized or "une esas ramas" in normalized or "unir ramas" in normalized:
+            match = self._first_match(
+                prompt,
+                [
+                    r"\b(?:une|unir|junta|juntar)\s+(?:esas\s+)?ramas\s+con\s+(?:un\s+)?join(?:\s+(?P<position>antes|despues|despu.s)\s+de\s+(?P<reference>.+))?$",
+                    r"\b(?:agrega|agregar|crea|crear)\s+(?:un\s+)?join(?:\s+(?P<position>antes|despues|despu.s)\s+de\s+(?P<reference>.+))?$",
+                ],
+            )
+            reference_name = ""
+            position = "after"
+            if match:
+                position = "after" if self._normalize(match.groupdict().get("position") or "despues") == "despues" else "before"
+                reference_name = self._resolve_node_reference_name(
+                    self._clean_node_name(match.groupdict().get("reference")) or "este nodo",
+                    workflow,
+                    context,
+                )
+            if not reference_name:
+                reference_name = self._target_node_name(context, workflow_context) or self._selected_node_name(context, workflow_context)
+            if not reference_name:
+                reference_name = self._first_activity_node_name(workflow)
+            return [
+                OperacionEdicionFlujo(
+                    type="ADD_NODE",
+                    node_name="Unir ramas paralelas",
+                    node_type="parallel_end",
+                    reference_node_name=reference_name,
+                    position=position,
+                    description="Join agregado para unir ramas paralelas.",
+                )
+            ] if reference_name else []
+
+        if "fork" not in normalized and "paralelo" not in normalized and "paralelas" not in normalized:
+            return []
+
+        reference_name = self._selected_node_name(context, workflow_context) or self._first_activity_node_name(workflow)
+        if not reference_name:
+            return []
+
+        fork_name = "Dividir trabajo paralelo"
+        operations: list[OperacionEdicionFlujo] = [
+            OperacionEdicionFlujo(
+                type="ADD_NODE",
+                node_name=fork_name,
+                node_type="parallel_start",
+                reference_node_name=reference_name,
+                position="after",
+                description="Fork agregado para iniciar trabajo en paralelo.",
+            )
+        ]
+
+        branch_names: list[str] = []
+        if "legal" in normalized:
+            branch_names.append("Revision Legal")
+        if "finanzas" in normalized or "financiera" in normalized:
+            branch_names.append("Revision Finanzas")
+
+        for branch_name in self._deduplicate(branch_names):
+            operations.append(
+                OperacionEdicionFlujo(
+                    type="ADD_NODE",
+                    node_name=branch_name,
+                    node_type="task",
+                    reference_node_name=fork_name,
+                    position="after",
+                    payload={"autoConnect": False},
+                    description="Rama paralela agregada por instruccion IA.",
+                )
+            )
+            operations.append(
+                OperacionEdicionFlujo(
+                    type="ADD_TRANSITION",
+                    from_node_name=fork_name,
+                    to_node_name=branch_name,
+                )
+            )
+        return operations
 
     def _detect_form_update(
         self,
@@ -368,8 +703,9 @@ class ServicioEditorFlujoIa:
         match = self._first_match(
             prompt,
             [
-                r"\b(?:agrega|agregar|crea|crear)\s+(?:una\s+)?decisi.n\s+(?P<position>despues|despu.s|antes)\s+de\s+(?P<reference>.+)$",
-                r"\b(?:agrega|agregar|crea|crear|anade|anadir|anadime)\s+(?:un\s+)?(?:nodo\s+(?:de\s+)?)?decisi.n\s+(?P<name>.+?)(?:(?:\s+)(?P<position>despues|despu.s|antes)\s+de\s+(?P<reference>.+))?$",
+                r"\b(?:agrega|agregar|crea|crear|anade|anadir|anadime)\s+(?:una\s+)?decisi.n\s+con\s+condicion\s+(?P<tail>.+)$",
+                r"\b(?:agrega|agregar|crea|crear)\s+(?:una\s+)?decisi.n\s+(?P<position>despues|despu.s|antes)\s+de\s+(?P<reference>.+?)(?:\s+con\s+(?:opciones?|condicion)\s+(?P<tail>.+))?$",
+                r"\b(?:agrega|agregar|crea|crear|anade|anadir|anadime)\s+(?:un\s+)?(?:nodo\s+(?:de\s+)?)?decisi.n\s+(?P<name>.+?)(?:(?:\s+)(?P<position>despues|despu.s|antes)\s+de\s+(?P<reference>.+?))?(?:\s+con\s+(?:opciones?|condicion)\s+(?P<tail>.+))?$",
             ],
         )
         if not match:
@@ -381,13 +717,19 @@ class ServicioEditorFlujoIa:
             workflow,
             context,
         )
+        if not reference_name:
+            workflow_context = _WorkflowContext(workflow)
+            reference_name = self._selected_node_name(context, workflow_context) or self._first_activity_node_name(workflow)
         node_name = self._build_decision_name(match.groupdict().get("name"), prompt)
+        options = self._extract_options(match.groupdict().get("tail") or prompt)
         return OperacionEdicionFlujo(
             type="ADD_NODE",
             node_name=node_name,
             node_type="decision",
             reference_node_name=reference_name,
             position=position,
+            options=options,
+            condition=self._extract_condition_text(prompt),
             description="Decision agregada por instruccion de edicion IA.",
         )
 
@@ -436,12 +778,13 @@ class ServicioEditorFlujoIa:
             [
                 r"\b(?:agrega|agregar|crea|crear|anade|anadir|anadime)\s+(?:un\s+)?(?:nodo\s+de\s+)?(?:actividad|tarea)\s+(?:llamad[ao]\s+)?(?P<name>.+?)\s+entre\s+(?P<from>.+?)\s+(?:y|e)\s+(?P<to>.+)$",
                 r"\b(?:agrega|agregar|crea|crear|anade|anadir|anadime)\s+entre\s+(?P<from>.+?)\s+(?:y|e)\s+(?P<to>.+?)\s+(?:un\s+)?(?:nodo\s+de\s+)?(?:actividad|tarea)\s+(?:llamad[ao]\s+)?(?P<name>.+)$",
+                r"\b(?:pon|pone|poner|mete|insertar|inserta)\s+(?:un\s+)?(?:nodo|actividad|tarea)(?:\s+(?:llamad[ao]\s+)?(?P<name>.+?))?\s+entre\s+(?P<from>.+?)\s+(?:y|e)\s+(?P<to>.+)$",
             ],
         )
         if not match:
             return []
 
-        node_name = self._clean_node_name(match.group("name"))
+        node_name = self._clean_node_name(match.groupdict().get("name")) or "Actividad intermedia"
         from_node_name = self._resolve_node_reference_name(self._clean_quoted_node_name(match.group("from")), workflow, context)
         to_node_name = self._resolve_node_reference_name(self._clean_quoted_node_name(match.group("to")), workflow, context)
         if not node_name or not from_node_name or not to_node_name:
@@ -674,7 +1017,8 @@ class ServicioEditorFlujoIa:
         stop_words = [" con condicion ", " cuando ", " si "]
         normalized = self._normalize(cleaned)
         for stop_word in stop_words:
-            stop_index = normalized.find(stop_word.strip())
+            match = re.search(rf"\b{re.escape(stop_word.strip())}\b", normalized)
+            stop_index = match.start() if match else -1
             if stop_index > 0:
                 return " ".join(cleaned.split()[: len(normalized[:stop_index].split())]).strip()
         return cleaned
@@ -687,6 +1031,96 @@ class ServicioEditorFlujoIa:
             return cleaned[1:-1].strip()
         return cleaned
 
+    def _clean_field_label(self, value: str | None) -> str:
+        cleaned = self._clean_node_name(value)
+        if not cleaned:
+            return ""
+        cleaned = re.sub(
+            r"\b(?:tipo|de\s+tipo|campo|llamado|llamada|obligatorio|obligatoria|opcional)\b",
+            "",
+            cleaned,
+            flags=re.IGNORECASE,
+        )
+        cleaned = re.sub(r"\b(?:texto|numero|n.mero|fecha|archivo|file|booleano|checkbox|textarea)\b", "", cleaned, flags=re.IGNORECASE)
+        cleaned = " ".join(cleaned.split())
+        return cleaned.strip(" .,:;\"'")
+
+    def _infer_field_type(self, value: str | None) -> str:
+        normalized = self._normalize(value or "")
+        if any(token in normalized for token in ["archivo", "file", "pdf", "documento", "adjunto"]):
+            return "file"
+        if any(token in normalized for token in ["numero", "numerico", "monto", "cantidad", "ci", "carnet"]):
+            return "number" if "ci" not in normalized and "carnet" not in normalized else "text"
+        if "fecha" in normalized:
+            return "date"
+        if any(token in normalized for token in ["booleano", "checkbox", "si no", "si/no", "verdadero", "falso"]):
+            return "boolean"
+        return "text"
+
+    def _extract_options(self, value: str | None) -> list[str]:
+        text = self._clean_condition(value)
+        if not text:
+            return []
+        match = re.search(r"\bopciones?\s+(?P<options>.+)$", text, flags=re.IGNORECASE)
+        raw_options = match.group("options") if match else text
+        if "condicion" in self._normalize(raw_options):
+            return []
+        parts = [
+            self._clean_condition(part)
+            for part in re.split(r"\s*,\s*|\s+y\s+|\s+o\s+", raw_options, flags=re.IGNORECASE)
+        ]
+        return [part for part in parts if part and 1 <= len(part) <= 60][:6]
+
+    def _extract_condition_text(self, value: str | None) -> str | None:
+        if not value:
+            return None
+        match = re.search(r"\b(?:condicion|cuando|si)\s+(?P<condition>.+)$", value, flags=re.IGNORECASE)
+        if not match:
+            return None
+        return self._clean_condition(match.group("condition"))
+
+    def _looks_like_department(self, value: str | None) -> bool:
+        normalized = self._normalize(value or "")
+        return any(token in normalized for token in ["departamento", "area", "unidad", "legal", "finanzas", "direccion", "caja"])
+
+    def _extract_form_node_name(
+        self,
+        prompt: str,
+        workflow: dict[str, Any],
+        context: dict[str, Any],
+    ) -> str:
+        match = self._first_match(
+            prompt,
+            [
+                r"\b(?:formulario|frormulario)\s+(?:dinamico\s+)?(?:de|del|de\s+la|de\s+el)\s+(?:la\s+|el\s+)?(?:actividad|tarea|nodo)?\s*:?\s*[\"']?(?P<node>.+?)[\"']?(?:\s+(?:para\s+que|agrega|agregar|elimina|eliminar|quita|quitar|borra|borrar|modifica|modificar|cambia|cambiar)\b|$)",
+                r"\b(?:actividad|tarea|nodo)\s*:?\s*[\"']?(?P<node>.+?)[\"']?(?:\s+(?:agrega|agregar|elimina|eliminar|quita|quitar|borra|borrar|modifica|modificar|cambia|cambiar)\b|$)",
+                r"\b(?:al|en|del|de\s+el)\s+(?:formulario|frormulario)\s+(?:de|del|de\s+la|de\s+el)\s+(?:la\s+|el\s+)?(?:actividad|tarea|nodo)?\s*[\"']?(?P<node>.+?)[\"']?(?:\s+para\s+que\b|$)",
+            ],
+        )
+        if match:
+            node_name = self._resolve_node_reference_name(self._clean_node_name(match.group("node")), workflow, context)
+            if node_name:
+                return node_name
+
+        workflow_context = _WorkflowContext(workflow)
+        selected_node_name = self._selected_node_name(context, workflow_context)
+        if selected_node_name:
+            return selected_node_name
+
+        normalized_prompt = self._normalize(prompt)
+        best_node = ""
+        best_score = 0
+        for node in self._workflow_nodes(workflow):
+            node_name = self._node_name(node)
+            if not node_name:
+                continue
+            candidate = self._normalize(node_name)
+            score = sum(1 for token in candidate.split() if len(token) >= 4 and token in normalized_prompt)
+            if score > best_score:
+                best_score = score
+                best_node = node_name
+        return best_node if best_score > 0 else ""
+
     def _build_activity_name_from_purpose(
         self,
         purpose: str | None,
@@ -697,6 +1131,7 @@ class ServicioEditorFlujoIa:
         if not cleaned:
             return "Nueva actividad"
 
+        cleaned = re.sub(r"^(?:de|para|por|a)\s+", "", cleaned, flags=re.IGNORECASE)
         normalized_context = self._normalize(" ".join([prompt, reference or ""]))
         normalized_purpose = self._normalize(cleaned)
         if "foto" in normalized_purpose and "pacient" in normalized_context:

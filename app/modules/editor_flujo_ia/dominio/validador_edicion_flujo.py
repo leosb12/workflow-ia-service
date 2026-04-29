@@ -17,8 +17,37 @@ class ResultadoValidacionEdicion:
 
 
 class ValidadorEdicionFlujo:
-    NODE_TYPES = {"start", "task", "decision", "parallel_start", "parallel_end", "end"}
-    FIELD_TYPES = {"text", "textarea", "number", "date", "boolean", "select", "file", "email", "phone", "currency"}
+    NODE_TYPES = {
+        "start",
+        "task",
+        "decision",
+        "parallel_start",
+        "parallel_end",
+        "end",
+        "INICIO",
+        "ACTIVIDAD",
+        "DECISION",
+        "FORK",
+        "JOIN",
+        "FIN",
+    }
+    FIELD_TYPES = {
+        "text",
+        "textarea",
+        "number",
+        "date",
+        "boolean",
+        "select",
+        "file",
+        "email",
+        "phone",
+        "currency",
+        "TEXTO",
+        "NUMERO",
+        "BOOLEANO",
+        "ARCHIVO",
+        "FECHA",
+    }
 
     def validar(
         self,
@@ -136,12 +165,20 @@ class ValidadorEdicionFlujo:
             self._validar_responsable(context, operation, result)
             return
 
+        if operation.type == "REMOVE_RESPONSIBLE":
+            self._require_existing_node(context, operation.node_id, operation.node_name, operation.type, result)
+            return
+
         if operation.type in {"UPDATE_FORM", "ADD_FORM_FIELD", "DELETE_FORM_FIELD"}:
             self._validar_formulario(context, operation, result)
             return
 
         if operation.type == "UPDATE_DECISION_CONDITION":
             self._validar_condicion_decision(context, operation, result)
+            return
+
+        if operation.type == "REORDER_FLOW":
+            self._validar_reorder_flow(context, operation, result)
             return
 
         if operation.type in {"ADD_BUSINESS_RULE", "DELETE_BUSINESS_RULE"}:
@@ -155,13 +192,17 @@ class ValidadorEdicionFlujo:
         result: ResultadoValidacionEdicion,
     ) -> None:
         if operation.reference_node_id or operation.reference_node_name:
-            self._require_existing_node(
-                context,
-                operation.reference_node_id,
-                operation.reference_node_name,
-                "ADD_NODE.reference",
-                result,
-            )
+            reference_key = self._normalize(operation.reference_node_name or "")
+            reference_is_new = reference_key in added_nodes
+            reference_exists = context.find_node(operation.reference_node_id, operation.reference_node_name) is not None
+            if not reference_is_new and not reference_exists:
+                self._require_existing_node(
+                    context,
+                    operation.reference_node_id,
+                    operation.reference_node_name,
+                    "ADD_NODE.reference",
+                    result,
+                )
 
         if operation.position and not (operation.reference_node_id or operation.reference_node_name):
             result.warnings.append("ADD_NODE indica position, pero no referenceNodeName/referenceNodeId.")
@@ -189,7 +230,7 @@ class ValidadorEdicionFlujo:
             return
 
         node_name = str(node.get("name") or operation.node_name or operation.node_id)
-        node_type = str(node.get("type") or "").strip().lower()
+        node_type = context.node_type(str(node.get("id") or "")) or ""
         if node_type == "start" or self._normalize(node_name) == "inicio":
             result.errors.append("No se permite eliminar el nodo INICIO.")
             return
@@ -334,7 +375,7 @@ class ValidadorEdicionFlujo:
         node = self._require_existing_node(context, operation.node_id, operation.node_name, "ASSIGN_RESPONSIBLE", result)
         if not node:
             return
-        if str(node.get("type") or "").strip().lower() != "task":
+        if context.node_type(str(node.get("id") or "")) != "task":
             result.errors.append("ASSIGN_RESPONSIBLE solo puede aplicarse a nodos task.")
         if operation.responsible_type == "initiator":
             return
@@ -354,12 +395,18 @@ class ValidadorEdicionFlujo:
         node = None
         if operation.node_id or operation.node_name:
             node = self._require_existing_node(context, operation.node_id, operation.node_name, operation.type, result)
-            if node and str(node.get("type") or "").strip().lower() != "task":
+            if node and context.node_type(str(node.get("id") or "")) != "task":
                 result.errors.append(f"{operation.type} solo puede asociarse a nodos task.")
 
         if operation.type == "UPDATE_FORM":
             if not node and not operation.form_id:
                 result.errors.append("UPDATE_FORM requiere nodeName/nodeId o formId.")
+            if operation.field_label:
+                form = context.find_form(operation.form_id, operation.node_id, operation.node_name)
+                if form is not None and not context.find_field(form, operation.field_id, operation.field_label):
+                    result.errors.append("UPDATE_FORM no encontro el campo indicado en el formulario.")
+            if operation.field_type and operation.field_type not in self.FIELD_TYPES:
+                result.errors.append(f"UPDATE_FORM usa un tipo de campo invalido: {operation.field_type}.")
             return
 
         if operation.type == "ADD_FORM_FIELD":
@@ -371,6 +418,9 @@ class ValidadorEdicionFlujo:
                 result.warnings.append("ADD_FORM_FIELD no indica fieldLabel.")
             if not operation.field_type:
                 result.warnings.append("ADD_FORM_FIELD no indica fieldType.")
+            form = context.find_form(operation.form_id, operation.node_id, operation.node_name)
+            if form is not None and operation.field_label and context.find_field(form, None, operation.field_label):
+                result.errors.append(f"ADD_FORM_FIELD duplicaria el campo {operation.field_label}.")
             return
 
         form = context.find_form(operation.form_id, operation.node_id, operation.node_name)
@@ -400,7 +450,7 @@ class ValidadorEdicionFlujo:
         )
         if not node:
             return
-        if str(node.get("type") or "").strip().lower() != "decision":
+        if context.node_type(str(node.get("id") or "")) != "decision":
             result.errors.append("UPDATE_DECISION_CONDITION solo puede aplicarse a nodos decision.")
         if not self._text(operation.condition or operation.decision_condition):
             result.errors.append("UPDATE_DECISION_CONDITION requiere condition o decisionCondition.")
@@ -425,6 +475,23 @@ class ValidadorEdicionFlujo:
         if operation.business_rule_name and context.find_business_rule(None, operation.business_rule_name):
             return
         result.errors.append("DELETE_BUSINESS_RULE no encontro la regla indicada.")
+
+    def _validar_reorder_flow(
+        self,
+        context: "_WorkflowContext",
+        operation: OperacionEdicionFlujo,
+        result: ResultadoValidacionEdicion,
+    ) -> None:
+        raw_node_names = operation.payload.get("nodeNames") or getattr(operation, "nodeNames", None)
+        if not isinstance(raw_node_names, list) or len(raw_node_names) < 2:
+            result.errors.append("REORDER_FLOW requiere payload.nodeNames con al menos dos nodos.")
+            return
+
+        for raw_name in raw_node_names:
+            node_name = str(raw_name or "").strip()
+            if not node_name:
+                continue
+            self._require_existing_node(context, None, node_name, "REORDER_FLOW", result)
 
     def _validar_riesgos_de_grafo(
         self,
@@ -687,6 +754,23 @@ class _WorkflowContext:
                 return form
             if resolved_node and form.get("nodeId") == resolved_node:
                 return form
+        if resolved_node:
+            node = self.find_node(resolved_node, None)
+            fields = self._as_list(node.get("formulario") if isinstance(node, dict) else None)
+            if fields:
+                return {
+                    "id": f"node-form:{resolved_node}",
+                    "nodeId": resolved_node,
+                    "fields": [
+                        {
+                            "id": str(field.get("campo") or ""),
+                            "label": str(field.get("campo") or ""),
+                            "type": field.get("tipo"),
+                        }
+                        for field in fields
+                        if isinstance(field, dict)
+                    ],
+                }
         return None
 
     def find_field(
@@ -702,7 +786,8 @@ class _WorkflowContext:
                 continue
             if field_id and field.get("id") == field_id:
                 return field
-            if normalized_label and self._normalize(str(field.get("label") or "")) == normalized_label:
+            candidate_label = str(field.get("label") or field.get("campo") or "")
+            if normalized_label and self._normalize(candidate_label) == normalized_label:
                 return field
         return None
 
