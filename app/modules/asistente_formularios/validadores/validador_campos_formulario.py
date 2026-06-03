@@ -116,6 +116,34 @@ class ValidadorCamposFormulario:
         if field.type == "file":
             return current_value, f"El campo '{field.id}' es tipo file y no se completa automaticamente."
 
+        if field.type == "checkbox":
+            if value is None:
+                return [], None
+            if isinstance(value, str):
+                items = [item.strip() for item in value.split(",") if item.strip()]
+            elif isinstance(value, list):
+                items = [str(item).strip() for item in value if item is not None]
+            else:
+                return current_value, f"No se pudo normalizar '{field.id}' como checkbox."
+
+            valid_options = []
+            for item in items:
+                mapped = self._match_option(item, field.options)
+                if mapped is not None:
+                    valid_options.append(mapped)
+            return valid_options, None
+
+        if field.type == "grid":
+            if value is None:
+                return current_value, None
+            if not isinstance(value, list) or not all(isinstance(row, list) for row in value):
+                return current_value, f"No se pudo normalizar '{field.id}' como matriz grid."
+            
+            sanitized_grid = []
+            for row in value:
+                sanitized_grid.append([str(cell) for cell in row])
+            return sanitized_grid, None
+
         return current_value, f"Tipo de campo no soportado para '{field.id}'."
 
     def _parse_boolean(self, value: Any) -> bool | None:

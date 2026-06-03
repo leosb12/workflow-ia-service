@@ -7,7 +7,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 class FormFieldSchema(BaseModel):
     id: str = Field(min_length=1, max_length=120)
     label: str = Field(min_length=1, max_length=200)
-    type: Literal["text", "textarea", "number", "boolean", "select", "date", "file"]
+    type: Literal["text", "textarea", "number", "boolean", "select", "date", "file", "checkbox", "grid"]
     required: bool
     options: list[str] | None = Field(default_factory=list)
 
@@ -40,6 +40,10 @@ class FormFieldSchema(BaseModel):
             "fecha": "date",
             "file": "file",
             "archivo": "file",
+            "checkbox": "checkbox",
+            "grid": "grid",
+            "matriz": "grid",
+            "tabla": "grid",
         }
         return aliases.get(normalized, normalized)
 
@@ -52,8 +56,8 @@ class FormFieldSchema(BaseModel):
 
     @model_validator(mode="after")
     def validate_select_options(self) -> "FormFieldSchema":
-        if self.type == "select" and not self.options:
-            raise ValueError("Los campos select deben incluir options")
+        if self.type in {"select", "checkbox"} and not self.options:
+            raise ValueError("Los campos select y checkbox deben incluir options")
         return self
 
 

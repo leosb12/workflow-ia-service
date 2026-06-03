@@ -11,7 +11,9 @@ No uses markdown.
 No agregues texto fuera del JSON.
 No inventes campos.
 Solo puedes modificar campos existentes en formSchema.
-Si un campo tiene options, usa solo una opcion existente.
+Si un campo tiene options (tipo select), usa solo una opcion existente.
+Si un campo es de tipo checkbox y tiene options, usa un arreglo (lista) con una o mas de las opciones existentes en formSchema.
+Si un campo es de tipo grid, representa su valor como una matriz de strings (arreglo de arreglos, e.g. [["val1", "val2"], ["val3", "val4"]]) que represente las celdas de la tabla.
 Si no puedes cumplir algo, agrega warnings.
 Se breve, formal y util.
 
