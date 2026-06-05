@@ -47,6 +47,7 @@ class ValidadorEdicionFlujo:
         "BOOLEANO",
         "ARCHIVO",
         "FECHA",
+        "DOCUMENTO_COLABORATIVO",
     }
 
     def validar(

@@ -1,0 +1,114 @@
+{
+        const msg = err?.error?.message ?? 'No se pudo cambiar el estado';
+        this.toast.error('Error', msg);
+      },
+    });
+  }
+
+  goBack(): void {
+    this.collabFacade.stopSession(true);
+    this.router.navigate(['/admin/politicas']);
+  }
+
+  // ── IA Flujo Generation ────────────────────────────────────
+  /**
+   * Abre el modal para generar un workflow con IA
+   */
+  openIaFlujoModal(): void {
+    if (this.isCanvasEditBlocked(true)) {
+      return;
+    }
+    this.showIaFlujoModal.set(true);
+  }
+
+  /**
+   * Cierra el modal de generación de workflow con IA
+   */
+  closeIaFlujoModal(): void {
+    this.showIaFlujoModal.set(false);
+  }
+
+  /**
+   * Maneja el workflow generado por IA y lo aplica al canvas
+   *
+   * @param event Evento que contiene los nodos, conexiones y análisis generados
+   */
+  onIaFlujoGenerated(event: {
+    nodos: Nodo[];
+    conexiones: Conexion[];
+    analysis: any;
+    iaResponse: IaFlujoResponse;
+  }): void {
+    void this.applyIaFlujo(event);
+  }
+
+  onIaWorkflowApplied(response?: IaWorkflowEditApplyResponse): void {
+    void this.refreshCanvasAfterIaWorkflowEdit(response?.workflow ?? null);
+  }
+
+  private async applyIaFlujo(event: {
+    nodos: Nodo[];
+    conexiones: Conexion[];
+    analysis: any;
+    iaResponse: IaFlujoResponse;
+  }): Promise<void> {
+    if (this.isApplyingIaFlujo()) {
+      return;
+    }
+
+    this.isApplyingIaFlujo.set(true);
+    try {
+      const departments = await this.ensureDepartmentsForIaFlujo(event.iaResponse);
+      this.departamentos.set(departments);
+
+      this.fitLaneSizeForIaFlujo(event.iaResponse, departments);
+
+      const { nodos, conexiones } = this.iaMapperService.mapIaResponseToFlujo(
+        event.iaResponse,
+        {
+          departamentos: departments.map((departamento) => ({
+            id: departamento.id,
+            nombre: departamento.nombre,
+          })),
+          defaultDepartamentoId: this.resolveRequiredDepartmentId(null),
+          responsableIniciadorId: this.RESPONSABLE_INICIADOR_TRAMITE_ID,
+        }
+      );
+
+      const positionedNodos = this.layoutIaNodos(nodos, conexiones);
+
+      this.nodos.set(positionedNodos);
+      const resolvedConnections = this.withResolvedConnectionPorts(conexiones);
+      const cleanedConnections = this.enforceDecisionConnectionLimits(resolvedConnections);
+      this.conexiones.set(cleanedConnections);
+      this.initializeConnectionPorts(positionedNodos, cleanedConnections);
+      this.enforceActivitiesAssignedToLane();
+
+      this.selectedNodeId.set(null);
+      await this.persistAndBroadcastCurrentFlow(
+        'No se pudo guardar automáticamente el flujo generado por IA'
+      );
+      // Marcar que acabamos de aplicar IA para bloquear cambios colaborativos
+      this.iaFlowJustAppliedAt = Date.now();
+      this.pendingLaneConfigGuard = {
+        laneOrientation: this.laneOrientation(),
+        laneWidth: this.laneWidth(),
+        laneHeight: this.laneHeight(),
+        expiresAt: Date.now() + 8000,
+      };
+      const summary = event.analysis?.summary || 'Flujo generado correctamente';
+      this.toast.success('Flujo generado', summary);
+      this.closeIaFlujoModal();
+    } catch (error) {
+      console.error('Error applying IA workflow:', error);
+      this.toast.error(
+        'Error al aplicar',
+        (error as { userMessage?: string })?.userMessage ??
+          'No se pudo aplicar el workflow generado'
+      );
+    } finally {
+      this.isApplyingIaFlujo.set(false);
+    }
+  }
+
+  private async refreshCanvasAfterIaWorkflo

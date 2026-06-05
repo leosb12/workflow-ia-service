@@ -489,7 +489,7 @@ class ServicioEditorFlujoIa:
             prompt,
             [
                 r"\b(?:modifica|modificar|modificame|cambia|cambiar|renombra|renombrar)\s+(?:el\s+)?campo\s+[\"']?(?P<field>.+?)[\"']?\s+(?:del|de\s+el|en\s+el)\s+(?:formulario|frormulario).*?(?:pon(?:e)?le|a|por|como)\s+[\"']?(?P<new>.+?)[\"']?$",
-                r"\b(?:cambia|cambiar)\s+(?:el\s+)?tipo\s+(?:del\s+)?campo\s+(?P<field>.+?)\s+a\s+(?P<type>texto|numero|n.mero|fecha|archivo|file|booleano|checkbox|si\/no|textarea)$",
+                r"\b(?:cambia|cambiar)\s+(?:el\s+)?tipo\s+(?:del\s+)?campo\s+(?P<field>.+?)\s+a\s+(?P<type>texto|numero|n.mero|fecha|archivo|file|booleano|checkbox|si\/no|textarea|colaborativo|word|docx)$",
             ],
         )
         if update_match:
@@ -523,9 +523,9 @@ class ServicioEditorFlujoIa:
         called_match = self._first_match(
             prompt,
             [
-                r"\bcampo\s+(?:obligatori[oa]\s+)?(?:tipo\s+)?(?P<type>texto|numero|n.mero|fecha|archivo|file|booleano|checkbox|si\/no|textarea)?\s*(?:llamado|llamada|nombre|que\s+se\s+llame)\s+[\"']?(?P<field>.+?)[\"']?(?:\s+(?:obligatorio|obligatoria|opcional))?(?:\s+(?:al|en|del|de\s+el)\s+(?:formulario|frormulario)|\s+y\s+(?:elimina|eliminar|quita|quitar|borra|borrar|modifica|modificar|cambia|cambiar)\b|$)",
-                r"\bcampo\s+(?P<type>texto|numero|n.mero|fecha|archivo|file|booleano|checkbox|si\/no|textarea)?\s*(?:llamado|llamada|nombre|que\s+se\s+llame)\s+[\"']?(?P<field>.+?)[\"']?(?:\s+(?:obligatorio|obligatoria|opcional))?(?:\s+(?:al|en|del|de\s+el)\s+(?:formulario|frormulario)|\s+y\s+(?:elimina|eliminar|quita|quitar|borra|borrar|modifica|modificar|cambia|cambiar)\b|$)",
-                r"\bcampo\s+(?P<type>texto|numero|n.mero|fecha|archivo|file|booleano|checkbox|si\/no|textarea)\s+(?:al|en|del|de\s+el)\s+(?:formulario|frormulario).*?(?:para\s+que\s+pregunte\s+(?:si\s+)?|preguntando\s+si\s+)(?P<field>.+)$",
+                r"\bcampo\s+(?:obligatori[oa]\s+)?(?:tipo\s+)?(?P<type>texto|numero|n.mero|fecha|archivo|file|booleano|checkbox|si\/no|textarea|colaborativo|word|docx)?\s*(?:llamado|llamada|nombre|que\s+se\s+llame)\s+[\"']?(?P<field>.+?)[\"']?(?:\s+(?:obligatorio|obligatoria|opcional))?(?:\s+(?:al|en|del|de\s+el)\s+(?:formulario|frormulario)|\s+y\s+(?:elimina|eliminar|quita|quitar|borra|borrar|modifica|modificar|cambia|cambiar)\b|$)",
+                r"\bcampo\s+(?P<type>texto|numero|n.mero|fecha|archivo|file|booleano|checkbox|si\/no|textarea|colaborativo|word|docx)?\s*(?:llamado|llamada|nombre|que\s+se\s+llame)\s+[\"']?(?P<field>.+?)[\"']?(?:\s+(?:obligatorio|obligatoria|opcional))?(?:\s+(?:al|en|del|de\s+el)\s+(?:formulario|frormulario)|\s+y\s+(?:elimina|eliminar|quita|quitar|borra|borrar|modifica|modificar|cambia|cambiar)\b|$)",
+                r"\bcampo\s+(?P<type>texto|numero|n.mero|fecha|archivo|file|booleano|checkbox|si\/no|textarea|colaborativo|word|docx)\s+(?:al|en|del|de\s+el)\s+(?:formulario|frormulario).*?(?:para\s+que\s+pregunte\s+(?:si\s+)?|preguntando\s+si\s+)(?P<field>.+)$",
             ],
         )
         if called_match:
@@ -1041,12 +1041,14 @@ class ServicioEditorFlujoIa:
             cleaned,
             flags=re.IGNORECASE,
         )
-        cleaned = re.sub(r"\b(?:texto|numero|n.mero|fecha|archivo|file|booleano|checkbox|textarea)\b", "", cleaned, flags=re.IGNORECASE)
+        cleaned = re.sub(r"\b(?:texto|numero|n.mero|fecha|archivo|file|booleano|checkbox|textarea|colaborativo|word|docx|onlyoffice)\b", "", cleaned, flags=re.IGNORECASE)
         cleaned = " ".join(cleaned.split())
         return cleaned.strip(" .,:;\"'")
 
     def _infer_field_type(self, value: str | None) -> str:
         normalized = self._normalize(value or "")
+        if any(token in normalized for token in ["colaborativo", "word", "docx", "onlyoffice"]):
+            return "DOCUMENTO_COLABORATIVO"
         if any(token in normalized for token in ["archivo", "file", "pdf", "documento", "adjunto"]):
             return "file"
         if any(token in normalized for token in ["numero", "numerico", "monto", "cantidad", "ci", "carnet"]):

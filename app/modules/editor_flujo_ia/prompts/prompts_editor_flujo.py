@@ -51,7 +51,7 @@ Reglas:
   - nodos: id, tipo (INICIO, ACTIVIDAD, DECISION, FORK, JOIN, FIN), nombre, departamentoId, responsableTipo, responsableId, posX, posY, formulario, condiciones.
   - conexiones: origen, destino, puertoOrigen, puertoDestino.
   - formulario de actividad: lista de campos con campo, tipo, etiqueta, requerido, placeholder, ayuda, orden, opciones y validaciones.
-  - Tipos reales persistibles: TEXTO, NUMERO, BOOLEANO, ARCHIVO, FECHA.
+  - Tipos reales persistibles: TEXTO, NUMERO, BOOLEANO, ARCHIVO, FECHA, DOCUMENTO_COLABORATIVO.
 - Tambien puede venir en formato generico:
   - nodes: id, type (start, task, decision, parallel_start, parallel_end, end), name.
   - transitions: from, to.
@@ -73,6 +73,30 @@ Reglas:
   - DELETE_FORM_FIELD con nodeName y fieldLabel.
   - UPDATE_FORM para renombrar o cambiar tipo de un campo: nodeName, fieldLabel, newName y/o fieldType.
   - Si el usuario pide obligatorio/opcional usa required=true/false. Si pide placeholder, ayuda, opciones o validaciones, incluyelos como placeholder, ayuda/help, options y validations.
+  - Si el usuario pide un documento colaborativo (Word, documento editable, OnlyOffice), usa fieldType=DOCUMENTO_COLABORATIVO.
+  - Para DOCUMENTO_COLABORATIVO, DEBES incluir directamente en la operacion el objeto "configuracionDocumento" con los permisos indicados en la instruccion (editar, leer, descargar, imprimir, comentar, reemplazar, eliminar, compartir, auditar, versiones) y clasificar los sujetos en departamentos, roles o usuarios.
+  - REGLA CRITICA: Usa "type": "ADD_FORM_FIELD" si estas creando el documento. Usa "type": "UPDATE_FORM" si el campo ya existe y lo estas modificando. El campo "type" debe ser exactamente uno de esos dos strings.
+  - Los unicos tipos de documento soportados son Word (tipoDocumento: "WORD"), Excel (tipoDocumento: "EXCEL") y PowerPoint (tipoDocumento: "POWERPOINT"). No inventes formatos como PDF.
+  - Ejemplo de operacion para DOCUMENTO_COLABORATIVO:
+    {
+      "type": "ADD_FORM_FIELD",
+      "nodeName": "Nombre de la tarea",
+      "fieldLabel": "Nombre del documento",
+      "fieldType": "DOCUMENTO_COLABORATIVO",
+      "configuracionDocumento": {
+        "tipoDocumento": "WORD", "extension": "docx", "onlyOfficeHabilitado": true,
+        "permisosEdicion": { "departamentos": ["Administracion"], "roles": [], "usuarios": [] },
+        "permisosLectura": { "incluirClienteIniciador": true, "departamentos": [], "roles": [], "usuarios": [] },
+        "permisosDescarga": { "departamentos": [], "roles": [], "usuarios": [] },
+        "permisosImpresion": { "departamentos": [], "roles": [], "usuarios": [] },
+        "permisosAdicionales": {
+          "puedeDescargar": true, "puedeImprimir": false, "puedeComentar": true,
+          "puedeReemplazar": false, "puedeEliminar": false, "puedeCompartirInternamente": false
+        },
+        "auditarCambios": true, "controlVersionesHabilitado": true
+      }
+    }
+  - Mapeo de permisos: "ver/leer" -> permisosLectura; "editar/modificar" -> permisosEdicion; "descargar" -> permisosDescarga y puedeDescargar=true; "imprimir" -> permisosImpresion y puedeImprimir=true; "comentar" -> puedeComentar=true, etc. Identifica si el sujeto es un departamento, rol (ej: ADMIN, FUNCIONARIO) o usuario. "cliente iniciador" va en incluirClienteIniciador=true.
 - Interpreta referencias relativas usando el context si existe: "este nodo", "nodo actual", "seleccionado", "el otro nodo", "siguiente nodo", "nodo anterior".
 - Si el usuario pide reconectar, mover o cambiar una conexion existente, prioriza una secuencia segura de operaciones estructuradas como DELETE_TRANSITION + ADD_TRANSITION.
 - Si el usuario pide agregar una decision en lenguaje natural como "preguntar si..." o "validar si...", conviertelo en un ADD_NODE de tipo decision con un nombre breve y entendible.

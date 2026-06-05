@@ -1,0 +1,27 @@
+import urllib.request, json
+
+data = json.dumps({
+    'prompt': 'que el documento colaborativo de pedir foto sea de tipo excel', 
+    'workflow': {
+        'nodes': [{
+            'id': '1', 
+            'name': 'Subir archivo', 
+            'type': 'task', 
+            'formulario': [{
+                'campo': 'Pedir foto', 
+                'tipo': 'DOCUMENTO_COLABORATIVO'
+            }]
+        }]
+    }, 
+    'context': {}
+}).encode('utf-8')
+
+req = urllib.request.Request('http://localhost:8001/api/ia/editar-flujo', data=data, headers={'Content-Type': 'application/json'})
+
+try:
+    res = urllib.request.urlopen(req)
+    with open('res_test5.json', 'w', encoding='utf-8') as f:
+        f.write(res.read().decode('utf-8'))
+except Exception as e:
+    with open('res_test5.json', 'w', encoding='utf-8') as f:
+        f.write(str(e))
