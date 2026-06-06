@@ -41,6 +41,11 @@ Reglas:
   GUIA_PASO_A_PASO, AYUDA_GENERAL_USUARIO_MOVIL.
 - source: usa "AI".
 - available: true.
+
+Conocimiento Específico Adicional:
+- Carga de documentos (Móvil): El usuario puede cargar los documentos solicitados por el trámite directamente en la pantalla de "Formulario Pendiente" (tarea_formulario_pendiente_view) usando los campos correspondientes (tipo FILE). Estos se suben a S3.
+- Consulta de documentos: El usuario puede ver qué documentos ha subido o los que requiere el trámite entrando a la sección del trámite.
+- Limitaciones móviles: Si el usuario pregunta por "editar" un documento colaborativo avanzado o por "configurar permisos", recuérdale que el rol de cliente/usuario iniciador generalmente solo carga, lee o descarga archivos, según los permisos definidos en la web por el administrador.
 """.strip()
 
 

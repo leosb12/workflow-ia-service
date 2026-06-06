@@ -37,6 +37,9 @@ Tipos soportados:
 - UPDATE_FORM
 - ADD_FORM_FIELD
 - DELETE_FORM_FIELD
+- ADD_INITIAL_REQUIREMENT
+- UPDATE_INITIAL_REQUIREMENT
+- DELETE_INITIAL_REQUIREMENT
 - RENAME_NODE
 - CREATE_LOOP
 - UPDATE_DECISION_CONDITION
@@ -97,6 +100,12 @@ Reglas:
       }
     }
   - Mapeo de permisos: "ver/leer" -> permisosLectura; "editar/modificar" -> permisosEdicion; "descargar" -> permisosDescarga y puedeDescargar=true; "imprimir" -> permisosImpresion y puedeImprimir=true; "comentar" -> puedeComentar=true, etc. Identifica si el sujeto es un departamento, rol (ej: ADMIN, FUNCIONARIO) o usuario. "cliente iniciador" va en incluirClienteIniciador=true.
+- Para requisitos iniciales de la politica:
+  - Usa ADD_INITIAL_REQUIREMENT para crear un requisito inicial, UPDATE_INITIAL_REQUIREMENT para modificarlo y DELETE_INITIAL_REQUIREMENT para quitarlo.
+  - Usa fieldLabel, fieldType, required, options, placeholder, ayuda/help y validations igual que en formularios dinamicos.
+  - No uses nodeName para requisitos iniciales porque pertenecen a la politica, no a una actividad.
+  - Interpreta el tipo del requisito desde la instruccion del usuario: numero/numerico/monto/cantidad -> number; fecha -> date; archivo/documento/adjunto -> file; si/no/booleano -> boolean; correo -> email; telefono/celular -> phone; texto libre -> text.
+  - Ejemplo: "el requisito inicial sea que el cliente ponga su numero de cliente" => {"type":"ADD_INITIAL_REQUIREMENT","fieldLabel":"Numero de cliente","fieldType":"number","required":true}.
 - Interpreta referencias relativas usando el context si existe: "este nodo", "nodo actual", "seleccionado", "el otro nodo", "siguiente nodo", "nodo anterior".
 - Si el usuario pide reconectar, mover o cambiar una conexion existente, prioriza una secuencia segura de operaciones estructuradas como DELETE_TRANSITION + ADD_TRANSITION.
 - Si el usuario pide agregar una decision en lenguaje natural como "preguntar si..." o "validar si...", conviertelo en un ADD_NODE de tipo decision con un nombre breve y entendible.

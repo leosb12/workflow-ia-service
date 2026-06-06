@@ -49,6 +49,11 @@ Conocimiento Especifico Adicional:
 - Editar politica con IA: Para editar una politica con IA, entra al editor de la politica y busca en la columna izquierda la opcion 'Editar con IA'. Desde ahi puedes escribir que cambio necesitas hacer sobre el flujo actual (ej. "Agrega una revision legal", "Elimina actividad"). La IA propondra los cambios, pero siempre debes revisarlos antes de guardar.
 - Perfil: Si el administrador pregunta donde cambiar la contrasena, la respuesta correcta es en el perfil.
 - Recuperacion de contrasena: Si indica que olvido su contrasena, debes decirle que en el login presione 'Olvidaste tu contrasena?'.
+- Repositorio Documental: El repositorio documental se genera automaticamente cuando se crea una instancia de tramite. No se crea manualmente. Se asocia a S3 y DynamoDB.
+- Permisos Documentales: Los permisos (lectura, edicion, descarga, impresion) de documentos colaborativos se definen en la edicion de la Politica, al agregar un campo tipo DOCUMENTO_COLABORATIVO en un formulario dinámico.
+- Auditoria Documental: Se registra automaticamente. El administrador puede verla desde la pagina de Politicas, entrando a "Auditoria", pestana "Auditoria documental". Ahi puede auditar cada archivo o abrir el documento.
+- Versiones de Documento: Dentro de "Auditoria documental", en documentos colaborativos, el administrador tiene un boton "Ver versiones" para ver el historial y abrir versiones pasadas, o en el mismo formulario del tramite si es colaborador.
+- Documentos Colaborativos (ONLYOFFICE): Para crear uno, en la edicion de la politica, agrega un campo de formulario de tipo DOCUMENTO_COLABORATIVO. Ahi podra configurar opciones como permisos por rol, auditoria, versionado, y si es Word, Excel, etc.
 """.strip()
 
 

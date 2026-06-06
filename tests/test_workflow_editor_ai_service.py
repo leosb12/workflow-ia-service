@@ -365,6 +365,44 @@ def test_dynamic_form_boolean_field_with_question_prompt() -> None:
     assert response.operations[0].field_type == "boolean"
 
 
+def test_initial_requirement_infers_number_field_from_natural_prompt() -> None:
+    response = run_prompt("Quiero que el requisito inicial sea que el cliente ponga su numero de cliente.")
+
+    assert response.success is True
+    assert response.errors == []
+    assert response.operations[0].type == "ADD_INITIAL_REQUIREMENT"
+    assert response.operations[0].node_name is None
+    assert response.operations[0].field_label == "Numero de cliente"
+    assert response.operations[0].field_type == "number"
+    assert response.operations[0].required is True
+
+
+def test_ai_initial_requirement_operation_does_not_require_node() -> None:
+    response = run_prompt_with_runner(
+        "Agrega como requisito inicial el telefono del cliente",
+        StaticPromptRunner(
+            """
+            {
+              "success": true,
+              "intent": "UPDATE_WORKFLOW",
+              "summary": "Agregar requisito inicial telefono del cliente.",
+              "operations": [
+                {"type": "ADD_INITIAL_REQUIREMENT", "fieldLabel": "Telefono del cliente", "fieldType": "phone", "required": true}
+              ],
+              "warnings": [],
+              "requiresConfirmation": true
+            }
+            """
+        ),
+    )
+
+    assert response.success is True
+    assert response.errors == []
+    assert response.operations[0].type == "ADD_INITIAL_REQUIREMENT"
+    assert response.operations[0].field_label == "Telefono del cliente"
+    assert response.operations[0].field_type == "phone"
+
+
 def test_parallel_fork_infers_legal_and_finance_branches() -> None:
     response = run_prompt_with_context(
         "Agrega un fork para que Legal y Finanzas trabajen en paralelo",
@@ -384,3 +422,18 @@ def test_parallel_fork_infers_legal_and_finance_branches() -> None:
     assert response.operations[1].node_name == "Revision Legal"
     assert response.operations[1].payload["autoConnect"] is False
     assert response.operations[3].node_name == "Revision Finanzas"
+
+
+def test_initial_requirement_user_prompts() -> None:
+    response = run_prompt("quiero que como requisito inicial el cliente de su codigo de cliente")
+    assert response.success is True
+    assert response.errors == []
+    assert response.operations[0].type == "ADD_INITIAL_REQUIREMENT"
+    assert response.operations[0].field_label == "Codigo de cliente"
+
+    response2 = run_prompt("requisito inicial de codigo de cliente")
+    assert response2.success is True
+    assert response2.errors == []
+    assert response2.operations[0].type == "ADD_INITIAL_REQUIREMENT"
+    assert response2.operations[0].field_label == "Codigo de cliente"
+

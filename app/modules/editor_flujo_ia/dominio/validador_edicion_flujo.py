@@ -174,6 +174,10 @@ class ValidadorEdicionFlujo:
             self._validar_formulario(context, operation, result)
             return
 
+        if operation.type in {"ADD_INITIAL_REQUIREMENT", "UPDATE_INITIAL_REQUIREMENT", "DELETE_INITIAL_REQUIREMENT"}:
+            self._validar_requisito_inicial(context, operation, result)
+            return
+
         if operation.type == "UPDATE_DECISION_CONDITION":
             self._validar_condicion_decision(context, operation, result)
             return
@@ -436,6 +440,39 @@ class ValidadorEdicionFlujo:
         if not context.find_field(form, operation.field_id, operation.field_label):
             result.errors.append("DELETE_FORM_FIELD no encontro el campo indicado en el formulario.")
 
+    def _validar_requisito_inicial(
+        self,
+        context: "_WorkflowContext",
+        operation: OperacionEdicionFlujo,
+        result: ResultadoValidacionEdicion,
+    ) -> None:
+        if operation.field_type and operation.field_type not in self.FIELD_TYPES:
+            result.errors.append(f"{operation.type} usa un tipo de campo invalido: {operation.field_type}.")
+
+        if operation.type == "ADD_INITIAL_REQUIREMENT":
+            if not operation.field_label:
+                result.warnings.append("ADD_INITIAL_REQUIREMENT no indica fieldLabel.")
+            if not operation.field_type:
+                result.warnings.append("ADD_INITIAL_REQUIREMENT no indica fieldType.")
+            if operation.field_label and context.find_initial_requirement(None, operation.field_label):
+                result.errors.append(f"ADD_INITIAL_REQUIREMENT duplicaria el requisito inicial {operation.field_label}.")
+            return
+
+        if operation.type == "UPDATE_INITIAL_REQUIREMENT":
+            if not operation.field_id and not operation.field_label:
+                result.errors.append("UPDATE_INITIAL_REQUIREMENT requiere fieldId o fieldLabel.")
+                return
+            if not context.find_initial_requirement(operation.field_id, operation.field_label):
+                result.errors.append("UPDATE_INITIAL_REQUIREMENT no encontro el requisito inicial indicado.")
+            return
+
+        if not operation.field_id and not operation.field_label:
+            result.errors.append("DELETE_INITIAL_REQUIREMENT requiere fieldId o fieldLabel.")
+            return
+
+        if not context.find_initial_requirement(operation.field_id, operation.field_label):
+            result.errors.append("DELETE_INITIAL_REQUIREMENT no encontro el requisito inicial indicado.")
+
     def _validar_condicion_decision(
         self,
         context: "_WorkflowContext",
@@ -631,6 +668,7 @@ class _WorkflowContext:
             if isinstance(transition, dict)
         ]
         self.forms = self._as_list(workflow.get("forms"))
+        self.initial_requirements = self._collect_initial_requirements(workflow)
         self.business_rules = self._as_list(workflow.get("businessRules"))
         self.nodes_by_id = {
             str(node.get("id")): node
@@ -792,6 +830,29 @@ class _WorkflowContext:
                 return field
         return None
 
+    def find_initial_requirement(
+        self,
+        field_id: str | None,
+        field_label: str | None,
+    ) -> dict[str, Any] | None:
+        normalized_label = self._normalize(field_label or "")
+        for field in self.initial_requirements:
+            if not isinstance(field, dict):
+                continue
+            if field_id and field.get("id") == field_id:
+                return field
+            candidate_label = str(
+                field.get("label")
+                or field.get("fieldLabel")
+                or field.get("etiqueta")
+                or field.get("campo")
+                or field.get("nombre")
+                or ""
+            )
+            if normalized_label and self._normalize(candidate_label) == normalized_label:
+                return field
+        return None
+
     def find_business_rule(self, rule_id: str | None, rule_name: str | None) -> dict[str, Any] | None:
         normalized_name = self._normalize(rule_name or "")
         for rule in self.business_rules:
@@ -805,6 +866,24 @@ class _WorkflowContext:
 
     def _as_list(self, value: Any) -> list[Any]:
         return value if isinstance(value, list) else []
+
+    def _collect_initial_requirements(self, workflow: dict[str, Any]) -> list[Any]:
+        keys = [
+            "initialRequirements",
+            "initial_requirements",
+            "requisitosIniciales",
+            "requisitos_iniciales",
+            "requisitos",
+        ]
+        values: list[Any] = []
+        for container in [workflow, workflow.get("policy"), workflow.get("politica")]:
+            if not isinstance(container, dict):
+                continue
+            for key in keys:
+                value = container.get(key)
+                if isinstance(value, list):
+                    values.extend(value)
+        return values
 
     def _node_name(self, node: dict[str, Any]) -> str | None:
         value = node.get("name") or node.get("nombre")

@@ -50,6 +50,11 @@ Conocimiento Específico Adicional:
 - Perfil: Si el funcionario pregunta dónde ver su departamento, la respuesta correcta es entrando a su perfil.
 - Cambio de contraseña: Si pregunta dónde cambiar la contraseña, la respuesta correcta es en el perfil.
 - Recuperación de contraseña: Si indica que olvidó su contraseña, debes decirle que en el login presione "¿Olvidaste tu contraseña?".
+- Carga de documentos: Los documentos requeridos en un trámite se cargan en la pantalla de la tarea (formulario dinámico). Si el estado del campo o trámite no lo permite, explicarle que requiere que la tarea esté en estado CREADO o similar. Formatos aceptados dependen del formulario.
+- Consulta de documentos: El funcionario puede ver los documentos en el formulario de su tarea actual. 
+- Permisos: Si no puede editar un Documento Colaborativo o no ve botón de descargar, es porque la configuración de la política asignada por el Administrador no le dio esos permisos a su rol/usuario/departamento en ese campo específico.
+- Versiones de Documento: Si el documento colaborativo tiene versiones habilitadas, el funcionario podrá ver el botón "Ver versiones" junto al documento en el formulario dinámico.
+- Documento Colaborativo (ONLYOFFICE): Se abre usando el botón "Abrir" al lado del documento. Si el estado es "NO INICIALIZADO", no podrá abrirlo. Debe guardarlo desde OnlyOffice.
 """.strip()
 
 

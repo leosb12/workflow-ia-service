@@ -159,6 +159,10 @@ class ServicioEditorFlujoIa:
         if operation:
             return [operation], warnings
 
+        operations = self._detect_initial_requirement_operations(prompt)
+        if operations:
+            return operations, warnings
+
         operations = self._detect_form_operations(prompt, request.workflow, request.context)
         if operations:
             return operations, warnings
@@ -580,6 +584,78 @@ class ServicioEditorFlujoIa:
             )
         return operations
 
+    def _detect_initial_requirement_operations(self, prompt: str) -> list[OperacionEdicionFlujo]:
+        normalized = self._normalize(prompt)
+        if not self._mentions_initial_requirements(normalized):
+            return []
+
+        delete_match = self._first_match(
+            prompt,
+            [
+                r"\b(?:elimina|eliminar|borra|borrar|quita|quitar)\s+(?:el\s+|la\s+)?(?:requisito|campo)\s+(?:inicial(?:es)?\s+)?(?P<field>.+)$",
+                r"\b(?:elimina|eliminar|borra|borrar|quita|quitar)\s+(?:de\s+)?(?:los\s+)?requisitos\s+iniciales\s+(?P<field>.+)$",
+            ],
+        )
+        if delete_match:
+            field_label = self._clean_initial_requirement_label(delete_match.group("field"))
+            return [
+                OperacionEdicionFlujo(
+                    type="DELETE_INITIAL_REQUIREMENT",
+                    field_label=field_label,
+                    payload={"target": "initialRequirements"},
+                )
+            ] if field_label else []
+
+        update_match = self._first_match(
+            prompt,
+            [
+                r"\b(?:modifica|modificar|modificame|cambia|cambiar|renombra|renombrar)\s+(?:el\s+|la\s+)?(?:requisito|campo)\s+(?:inicial(?:es)?\s+)?[\"']?(?P<field>.+?)[\"']?\s+(?:a|por|como)\s+[\"']?(?P<new>.+?)[\"']?$",
+            ],
+        )
+        if update_match:
+            field_label = self._clean_initial_requirement_label(update_match.group("field"))
+            new_name = self._clean_initial_requirement_label(update_match.group("new"))
+            field_type = self._infer_field_type(update_match.group("new") or "")
+            return [
+                OperacionEdicionFlujo(
+                    type="UPDATE_INITIAL_REQUIREMENT",
+                    field_label=field_label,
+                    new_name=new_name or None,
+                    field_type=field_type,
+                    payload={"target": "initialRequirements"},
+                )
+            ] if field_label and (new_name or field_type) else []
+
+        is_action = any(
+            token in normalized
+            for token in [
+                "agrega", "agregar", "anade", "anadir", "anadime", "crea", "crear",
+                "sea", "sean", "pida", "pidan", "solicite", "soliciten", "debe", "deban",
+                "ingrese", "ingresen", "suba", "suban", "adjunte", "adjunten", "dar",
+                "ponga", "pongan", "coloque", "coloquen", "escriba", "escriban",
+                "proporcione", "proporcionen", "pide", "solicita", "requiere",
+                "requerimos", "solicitamos", "tenga", "tengan", "de", "da"
+            ]
+        ) or ":" in prompt or normalized.startswith("requisito") or "como requisito" in normalized
+
+        if not is_action:
+            return []
+
+        field_label = self._extract_initial_requirement_label(prompt)
+        if not field_label:
+            return []
+
+        return [
+            OperacionEdicionFlujo(
+                type="ADD_INITIAL_REQUIREMENT",
+                field_label=field_label,
+                field_type=self._infer_field_type(" ".join([prompt, field_label])),
+                required="opcional" not in normalized and "no obligatorio" not in normalized,
+                options=self._extract_options(prompt) if "opcion" in normalized else [],
+                payload={"target": "initialRequirements"},
+            )
+        ]
+
     def _detect_parallel_operations(
         self,
         prompt: str,
@@ -979,6 +1055,12 @@ class ServicioEditorFlujoIa:
             return f"Se propone renombrar {operation.node_name or operation.node_id} a {operation.new_name}."
         if operation.type == "ASSIGN_RESPONSIBLE":
             return f"Se propone reasignar el responsable de {operation.node_name or operation.node_id}."
+        if operation.type == "ADD_INITIAL_REQUIREMENT":
+            return f"Se propone agregar el requisito inicial {operation.field_label}."
+        if operation.type == "UPDATE_INITIAL_REQUIREMENT":
+            return f"Se propone modificar el requisito inicial {operation.field_label or operation.field_id}."
+        if operation.type == "DELETE_INITIAL_REQUIREMENT":
+            return f"Se propone eliminar el requisito inicial {operation.field_label or operation.field_id}."
         return f"Se propone aplicar la operacion {operation.type}."
 
     def _extract_warnings(self, payload: dict[str, Any]) -> list[str]:
@@ -1045,14 +1127,99 @@ class ServicioEditorFlujoIa:
         cleaned = " ".join(cleaned.split())
         return cleaned.strip(" .,:;\"'")
 
+    def _mentions_initial_requirements(self, normalized_prompt: str) -> bool:
+        return any(
+            token in normalized_prompt
+            for token in [
+                "requisito inicial",
+                "requisitos iniciales",
+                "requisito de inicio",
+                "requisitos de inicio",
+                "initial requirement",
+                "initial requirements",
+            ]
+        )
+
+    def _extract_initial_requirement_label(self, prompt: str) -> str:
+        match = self._first_match(
+            prompt,
+            [
+                r"\brequisitos?\s+inicial(?:es)?\s+(?:sea|sean)\s+que\s+(?P<field>.+)$",
+                r"\brequisitos?\s+inicial(?:es)?\s+(?:debe|deban|tenga|tengan|incluya|incluyan|pida|pidan|solicite|soliciten)\s+(?:que\s+)?(?P<field>.+)$",
+                r"\b(?:agrega|agregar|anade|anadir|anadime|crea|crear)\s+(?:un\s+|una\s+)?requisito\s+inicial\s+(?:obligatori[oa]\s+|opcional\s+)?(?:tipo\s+(?:texto|numero|n.mero|fecha|archivo|file|booleano|checkbox|si\/no|textarea|email|correo|telefono|celular)\s+)?(?:llamado|llamada|nombre|que\s+se\s+llame)\s+[\"']?(?P<field>.+?)[\"']?$",
+                r"\b(?:agrega|agregar|anade|anadir|anadime|crea|crear)\s+(?:como\s+)?(?:un\s+|una\s+)?requisito\s+inicial\s+(?P<field>.+)$",
+                r"\b(?:pide|pedir|solicita|solicitar)\s+(?:como\s+)?requisito\s+inicial\s+(?P<field>.+)$",
+                r"\brequisitos?\s+inicial(?:es)?\s*:\s*(?P<field>.+)$",
+                r"\brequisitos?\s+inicial(?:es)?\s+(?:de\s+)?(?P<field>.+)$",
+                r"\brequisitos?\s+de\s+inicio\s+(?:de\s+)?(?P<field>.+)$",
+            ],
+        )
+        if not match:
+            return ""
+        return self._clean_initial_requirement_label(match.group("field"))
+
+    def _clean_initial_requirement_label(self, value: str | None) -> str:
+        cleaned = self._clean_node_name(value)
+        if not cleaned:
+            return ""
+
+        cleaned = re.sub(
+            r"\s+(?:y\s+)?(?:elimina|eliminar|quita|quitar|borra|borrar|modifica|modificar|cambia|cambiar)\b.*$",
+            "",
+            cleaned,
+            flags=re.IGNORECASE,
+        )
+        cleaned = re.sub(r"\b(?:requisitos?|campo)\s+inicial(?:es)?\b", "", cleaned, flags=re.IGNORECASE)
+        cleaned = re.sub(r"\b(?:obligatori[oa]|opcional|llamado|llamada|nombre|que\s+se\s+llame)\b", "", cleaned, flags=re.IGNORECASE)
+        cleaned = re.sub(r"^\s*(?:que\s+)?", "", cleaned, flags=re.IGNORECASE)
+
+        prefixes = [
+            r"(?:el|la)?\s*(?:cliente|usuario|solicitante|persona|iniciador|ciudadano)\s+",
+            r"(?:debe|deban|tiene\s+que|tengan\s+que|pueda|puedan)\s+",
+            r"(?:ponga|poner|ingrese|ingresar|introduzca|introducir|coloque|colocar|escriba|escribir|registre|registrar|complete|completar|indique|indicar|proporcione|proporcionar|suba|subir|adjunte|adjuntar|cargue|cargar|seleccione|seleccionar|elija|elegir|especifique|especificar|declare|declarar|de|da|dar|entregue|entrega|entregar|presente|presentar|pida|pedir|solicite|solicitar|requiera|requerir|ingrese|ingresen)\s+",
+            r"(?:su|sus|el|la|los|las|un|una)\s+",
+        ]
+        changed = True
+        while changed:
+            changed = False
+            for prefix in prefixes:
+                updated = re.sub(rf"^\s*{prefix}", "", cleaned, flags=re.IGNORECASE).strip()
+                if updated != cleaned:
+                    cleaned = updated
+                    changed = True
+
+        cleaned = re.sub(r"^(?:tipo\s+)(?:texto|numero|n.mero|fecha|archivo|file|booleano|checkbox|si\/no|textarea|email|correo|telefono|celular)\s+", "", cleaned, flags=re.IGNORECASE)
+        cleaned = " ".join(cleaned.strip(" .,:;\"'").split())
+        return self._format_requirement_label(cleaned)
+
+    def _format_requirement_label(self, value: str) -> str:
+        if not value:
+            return ""
+        words = value.split()
+        formatted: list[str] = []
+        for index, word in enumerate(words):
+            if word.isupper() and len(word) <= 4:
+                formatted.append(word)
+                continue
+            lower = word.lower()
+            formatted.append(lower[:1].upper() + lower[1:] if index == 0 else lower)
+        return " ".join(formatted)
+
     def _infer_field_type(self, value: str | None) -> str:
         normalized = self._normalize(value or "")
+        tokens = set(normalized.split())
         if any(token in normalized for token in ["colaborativo", "word", "docx", "onlyoffice"]):
             return "DOCUMENTO_COLABORATIVO"
         if any(token in normalized for token in ["archivo", "file", "pdf", "documento", "adjunto"]):
             return "file"
-        if any(token in normalized for token in ["numero", "numerico", "monto", "cantidad", "ci", "carnet"]):
-            return "number" if "ci" not in normalized and "carnet" not in normalized else "text"
+        if any(token in normalized for token in ["correo", "email", "e-mail"]):
+            return "email"
+        if any(token in normalized for token in ["telefono", "celular", "movil", "whatsapp"]):
+            return "phone"
+        if any(token in normalized for token in ["numero", "nro", "numerico", "monto", "cantidad"]):
+            return "number"
+        if "ci" in tokens or "carnet" in tokens:
+            return "text"
         if "fecha" in normalized:
             return "date"
         if any(token in normalized for token in ["booleano", "checkbox", "si no", "si/no", "verdadero", "falso"]):

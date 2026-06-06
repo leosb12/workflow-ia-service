@@ -10,6 +10,7 @@ from app.modules.simulacion.controlador import router as router_simulacion
 from app.modules.guia_usuario.controlador import router as router_guia_usuario
 from app.modules.generador_flujos.controlador import router as router_generador_flujos
 from app.modules.editor_flujo_ia.controlador import router as router_editor_flujo_ia
+from app.modules.clasificador_solicitudes_orquestador.controlador import router as router_clasificador_solicitudes
 
 
 def create_app() -> FastAPI:
@@ -30,6 +31,7 @@ def create_app() -> FastAPI:
     app.include_router(router_simulacion)
     app.include_router(router_guia_usuario)
     app.include_router(router_editor_flujo_ia)
+    app.include_router(router_clasificador_solicitudes)
 
     @app.get("/health", tags=["health"])
     async def health() -> dict[str, str]:

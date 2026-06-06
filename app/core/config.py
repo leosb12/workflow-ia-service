@@ -1,7 +1,10 @@
 from functools import lru_cache
+from pathlib import Path
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+ENV_FILE = Path(__file__).resolve().parents[2] / ".env"
 
 
 class Settings(BaseSettings):
@@ -21,9 +24,13 @@ class Settings(BaseSettings):
     deepseek_max_tokens: int = Field(default=0, validation_alias="DEEPSEEK_MAX_TOKENS")
     deepseek_temperature: float = Field(default=0.2, validation_alias="DEEPSEEK_TEMPERATURE")
     deepseek_timeout_seconds: float = Field(default=0.0, validation_alias="DEEPSEEK_TIMEOUT_SECONDS")
+    ia_deep_learning_service_url: str = Field(
+        default="http://localhost:8010",
+        validation_alias="IA_DEEP_LEARNING_SERVICE_URL",
+    )
 
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=ENV_FILE,
         env_file_encoding="utf-8",
         extra="ignore",
         case_sensitive=False,
