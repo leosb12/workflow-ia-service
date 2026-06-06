@@ -165,6 +165,44 @@ class ClasificadorIntencionUsuarioMovil:
         ):
             return IntencionGuiaUsuarioMovil.GUIA_PASO_A_PASO
 
+        if self._contains_any(
+            normalizada,
+            [
+                "requisitos iniciales",
+                "requisito inicial",
+                "formulario antes",
+                "antes de iniciar",
+            ],
+        ):
+            if self._contains_any(
+                normalizada,
+                ["llenar", "completar", "como lleno", "como subo", "no puedo", "obligatorio", "opcional"],
+            ):
+                return IntencionGuiaUsuarioMovil.AYUDA_LLENAR_REQUISITOS_INICIALES
+            return IntencionGuiaUsuarioMovil.EXPLICAR_REQUISITOS_INICIALES
+
+        if self._contains_any(
+            normalizada,
+            [
+                "clasificacion",
+                "saber que tramite",
+                "cual tramite corresponde",
+                "no se que tramite",
+            ],
+        ):
+            return IntencionGuiaUsuarioMovil.EXPLICAR_CLASIFICACION_IA
+
+        if self._contains_any(
+            normalizada,
+            [
+                "recomendar",
+                "recomendacion",
+                "ia recomienda",
+                "politica recomendada",
+            ],
+        ):
+            return IntencionGuiaUsuarioMovil.EXPLICAR_RECOMENDACION_IA
+
         if pantalla in {
             PantallaGuia.DETALLE_TRAMITE,
             PantallaGuia.ESTADO_TRAMITE,

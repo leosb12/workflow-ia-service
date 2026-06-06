@@ -147,6 +147,15 @@ class RespaldoGuiaFuncionario:
                 intent=intent,
             )
 
+        if intent in {
+            EmployeeGuideIntent.EXPLICAR_REQUISITOS_INICIALES_USUARIO,
+            EmployeeGuideIntent.EXPLICAR_TRAZABILIDAD_INTERDEPARTAMENTAL,
+            EmployeeGuideIntent.EXPLICAR_TAREAS_COMPARTIDAS,
+            EmployeeGuideIntent.EXPLICAR_SOLICITUD_ORIGINAL_USUARIO,
+            EmployeeGuideIntent.EXPLICAR_POLITICA_RECOMENDADA_IA,
+        }:
+            return self._build_new_features_response(request, intent, suggested_actions)
+
         return EmployeeGuideResponse(
             answer=self._build_general_help_answer(request),
             steps=self._build_general_help_steps(request),
@@ -507,6 +516,55 @@ class RespaldoGuiaFuncionario:
                 f"El último paso fue completado por {request.context.history_summary.last_completed_by}."
             )
         return steps[:4]
+
+    def _build_new_features_response(
+        self,
+        request: EmployeeGuideRequest,
+        intent: EmployeeGuideIntent,
+        suggested_actions: list[SuggestedAction],
+    ) -> EmployeeGuideResponse:
+        if intent == EmployeeGuideIntent.EXPLICAR_REQUISITOS_INICIALES_USUARIO:
+            answer = "Los requisitos iniciales cargados por el usuario antes de iniciar el trámite se pueden consultar en el detalle del trámite, en la sección de Trazabilidad Interdepartamental o Información Inicial."
+            steps = [
+                "Entra al detalle del trámite asignado.",
+                "Busca la pestaña de Trazabilidad o Información Inicial.",
+                "Ahí verás los campos completados y los archivos que subió el usuario.",
+            ]
+        elif intent == EmployeeGuideIntent.EXPLICAR_TRAZABILIDAD_INTERDEPARTAMENTAL:
+            answer = "La trazabilidad interdepartamental es el historial del trámite. Ahí puedes ver por qué departamentos pasó la solicitud, qué hizo cada funcionario y revisar la información original que envió el usuario."
+            steps = [
+                "Abre el seguimiento o detalle del trámite.",
+                "Revisa el historial de tareas y departamentos.",
+            ]
+        elif intent == EmployeeGuideIntent.EXPLICAR_TAREAS_COMPARTIDAS:
+            answer = "Las tareas ya no se bloquean individualmente. Si un funcionario de tu departamento toma la tarea, tú también puedes entrar y colaborar. La tarea pertenece al departamento en conjunto."
+            steps = [
+                "Asegúrate de que la tarea esté en estado 'En Proceso'.",
+                "Puedes editar el formulario de forma compartida con otro funcionario de tu departamento.",
+            ]
+        elif intent == EmployeeGuideIntent.EXPLICAR_SOLICITUD_ORIGINAL_USUARIO:
+            answer = "La solicitud original escrita o dictada por el usuario al inicio del trámite se guarda en la trazabilidad. Ahí puedes leer exactamente qué necesidad planteó."
+            steps = [
+                "Abre la trazabilidad del trámite.",
+                "Busca la sección de solicitud inicial o recomendación IA.",
+            ]
+        elif intent == EmployeeGuideIntent.EXPLICAR_POLITICA_RECOMENDADA_IA:
+            answer = "La política que la IA recomendó basándose en la solicitud del usuario se muestra en la trazabilidad del trámite. Esto te ayuda a entender por qué se inició este flujo específico."
+            steps = [
+                "Revisa la trazabilidad del trámite.",
+                "Ahí verás la clasificación y la política sugerida inicialmente.",
+            ]
+        else:
+            answer = "Esta función se consulta desde el detalle de la tarea o la trazabilidad del trámite."
+            steps = []
+
+        return EmployeeGuideResponse(
+            answer=answer,
+            steps=steps,
+            suggestedActions=suggested_actions,
+            severity=GuideSeverity.INFO,
+            intent=intent,
+        )
 
     def _build_general_help_answer(self, request: EmployeeGuideRequest) -> str:
         return (

@@ -37,8 +37,9 @@ Reglas:
   EXPLICAR_PANTALLA, QUE_PUEDO_HACER_AQUI, EXPLICAR_ESTADO_TRAMITE,
   EXPLICAR_PROGRESO_TRAMITE, EXPLICAR_ETAPA_ACTUAL, EXPLICAR_HISTORIAL,
   EXPLICAR_DOCUMENTOS_FALTANTES, EXPLICAR_OBSERVACIONES, EXPLICAR_RECHAZO,
-  EXPLICAR_PROXIMO_PASO, AYUDA_INICIAR_TRAMITE, AYUDA_SUBIR_DOCUMENTO,
-  GUIA_PASO_A_PASO, AYUDA_GENERAL_USUARIO_MOVIL.
+  EXPLICAR_PROXIMO_PASO, AYUDA_INICIAR_TRAMITE, AYUDA_SUBIR_DOCUMENTO, AYUDA_CONSULTA_DOCUMENTO,
+  GUIA_PASO_A_PASO, EXPLICAR_REQUISITOS_INICIALES, AYUDA_LLENAR_REQUISITOS_INICIALES,
+  EXPLICAR_CLASIFICACION_IA, EXPLICAR_RECOMENDACION_IA, AYUDA_GENERAL_USUARIO_MOVIL.
 - source: usa "AI".
 - available: true.
 
@@ -46,6 +47,8 @@ Conocimiento Específico Adicional:
 - Carga de documentos (Móvil): El usuario puede cargar los documentos solicitados por el trámite directamente en la pantalla de "Formulario Pendiente" (tarea_formulario_pendiente_view) usando los campos correspondientes (tipo FILE). Estos se suben a S3.
 - Consulta de documentos: El usuario puede ver qué documentos ha subido o los que requiere el trámite entrando a la sección del trámite.
 - Limitaciones móviles: Si el usuario pregunta por "editar" un documento colaborativo avanzado o por "configurar permisos", recuérdale que el rol de cliente/usuario iniciador generalmente solo carga, lee o descarga archivos, según los permisos definidos en la web por el administrador.
+- Requisitos Iniciales: Son datos o documentos (formularios previos) que el sistema necesita antes de iniciar el trámite. Si la política tiene requisitos configurados, al tocar "Iniciar trámite" se abrirá una pantalla previa donde deberás completar los campos obligatorios. Una vez completados, recién se crea o continúa el trámite. Los requisitos iniciales no son lo mismo que los documentos del trámite que se piden después.
+- Clasificar Solicitud y Recomendar Política (IA): Esta función ayuda a encontrar el trámite correcto. El usuario puede escribir o usar voz para indicar su necesidad. La IA analizará la solicitud y mostrará/recomendará la política o trámite que más corresponde. Luego el usuario puede revisar la recomendación e iniciar el trámite. La IA solo orienta y recomienda, el usuario es quien confirma e inicia el trámite.
 """.strip()
 
 

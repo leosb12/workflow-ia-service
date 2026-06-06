@@ -193,6 +193,61 @@ class ClasificadorIntencionFuncionario:
         ):
             return IntencionGuiaFuncionario.EXPLAIN_WORKFLOW_PROGRESS
 
+        if self._contains_any(
+            normalized,
+            [
+                "requisitos iniciales",
+                "requisito inicial",
+                "cargo el usuario",
+                "que cargo el usuario",
+                "cargo antes",
+            ],
+        ):
+            return IntencionGuiaFuncionario.EXPLICAR_REQUISITOS_INICIALES_USUARIO
+
+        if self._contains_any(
+            normalized,
+            [
+                "trazabilidad interdepartamental",
+                "trazabilidad",
+            ],
+        ):
+            return IntencionGuiaFuncionario.EXPLICAR_TRAZABILIDAD_INTERDEPARTAMENTAL
+
+        if self._contains_any(
+            normalized,
+            [
+                "tareas compartidas",
+                "tarea compartida",
+                "tomada por otro",
+                "trabajar con otro",
+                "mismo departamento",
+            ],
+        ):
+            return IntencionGuiaFuncionario.EXPLICAR_TAREAS_COMPARTIDAS
+
+        if self._contains_any(
+            normalized,
+            [
+                "solicitud original",
+                "que escribio",
+                "que necesito el usuario",
+                "necesidad del usuario",
+            ],
+        ):
+            return IntencionGuiaFuncionario.EXPLICAR_SOLICITUD_ORIGINAL_USUARIO
+
+        if self._contains_any(
+            normalized,
+            [
+                "politica recomendada",
+                "que recomendo la ia",
+                "recomendacion ia",
+                "clasificacion",
+            ],
+        ):
+            return IntencionGuiaFuncionario.EXPLICAR_POLITICA_RECOMENDADA_IA
+
         return IntencionGuiaFuncionario.GENERAL_EMPLOYEE_HELP
 
     def _contains_any(self, text: str, options: list[str]) -> bool:

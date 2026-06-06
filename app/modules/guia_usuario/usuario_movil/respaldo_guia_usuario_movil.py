@@ -152,6 +152,14 @@ class RespaldoGuiaUsuarioMovil:
                 intencion=intent,
             )
 
+        if intent in {
+            IntencionGuiaUsuarioMovil.EXPLICAR_REQUISITOS_INICIALES,
+            IntencionGuiaUsuarioMovil.AYUDA_LLENAR_REQUISITOS_INICIALES,
+            IntencionGuiaUsuarioMovil.EXPLICAR_CLASIFICACION_IA,
+            IntencionGuiaUsuarioMovil.EXPLICAR_RECOMENDACION_IA,
+        }:
+            return self._build_new_features_response(request, intent, acciones_sugeridas)
+
         return RespuestaGuiaUsuarioMovil(
             respuesta=self._build_general_help_answer(request),
             pasos=self._build_general_help_steps(request),
@@ -471,6 +479,52 @@ class RespaldoGuiaUsuarioMovil:
             "Preguntame que puedes hacer en esta pantalla.",
             "Preguntame como iniciar un tramite o como revisar uno ya creado.",
         ]
+
+    def _build_new_features_response(
+        self,
+        request: SolicitudGuiaUsuarioMovil,
+        intent: IntencionGuiaUsuarioMovil,
+        acciones_sugeridas: list[AccionSugerida],
+    ) -> RespuestaGuiaUsuarioMovil:
+        if intent == IntencionGuiaUsuarioMovil.EXPLICAR_REQUISITOS_INICIALES:
+            answer = "Los requisitos iniciales son datos o documentos que el sistema necesita antes de iniciar el trámite. Si la política tiene requisitos configurados, al tocar 'Iniciar trámite' se abrirá una pantalla previa donde deberás completar los campos obligatorios."
+            steps = [
+                "Revisa la lista de trámites o la opción de iniciar.",
+                "Completa los campos previos que te pida el sistema.",
+                "Una vez completados, recién se crea o continúa el trámite.",
+            ]
+        elif intent == IntencionGuiaUsuarioMovil.AYUDA_LLENAR_REQUISITOS_INICIALES:
+            answer = "Para llenar los requisitos iniciales, completa los campos de texto, fechas o sube los archivos que el formulario previo te solicite. Los que tienen asterisco (*) suelen ser obligatorios."
+            steps = [
+                "Completa la información obligatoria.",
+                "Si te pide un archivo o foto, toca el campo para subirlo.",
+                "Presiona el botón de continuar o enviar para que se inicie tu trámite.",
+            ]
+        elif intent == IntencionGuiaUsuarioMovil.EXPLICAR_CLASIFICACION_IA:
+            answer = "Esta función te ayuda a encontrar el trámite correcto. Puedes escribir o usar tu voz (si la app lo permite) para explicar qué necesitas. La IA analizará tu solicitud y te mostrará la política o trámite que más corresponde."
+            steps = [
+                "Ve a la sección de nueva solicitud o asistente.",
+                "Escribe o dicta lo que necesitas (ej. 'quiero solicitar permiso').",
+                "Revisa el trámite que el sistema identificó para ti.",
+            ]
+        elif intent == IntencionGuiaUsuarioMovil.EXPLICAR_RECOMENDACION_IA:
+            answer = "El sistema utiliza IA para recomendarte la política más adecuada según la información entregada o lo que escribiste. Puedes revisar esta recomendación e iniciar el trámite si estás de acuerdo."
+            steps = [
+                "Revisa la política que el sistema te recomienda.",
+                "Si es correcta, confirma e inicia el trámite.",
+                "Si la recomendación no es correcta, intenta ser más específico en tu solicitud.",
+            ]
+        else:
+            answer = "Esta función te ayuda a encontrar y completar tu solicitud más rápido."
+            steps = []
+
+        return RespuestaGuiaUsuarioMovil(
+            respuesta=answer,
+            pasos=steps,
+            acciones_sugeridas=acciones_sugeridas[:3],
+            severidad=SeveridadGuia.INFO,
+            intencion=intent,
+        )
 
     def _build_status_explanation(self, estado: str | None) -> str | None:
         normalized = self._normalize_code(estado)

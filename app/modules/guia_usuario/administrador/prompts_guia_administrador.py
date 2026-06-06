@@ -36,12 +36,17 @@ Reglas:
 - intent: una de estas intenciones:
   EXPLAIN_SCREEN, WHAT_CAN_I_DO_HERE, SUGGEST_RESPONSIBLE, SUGGEST_ACTIVITY_FORM, SUGGEST_DECISION,
   SUGGEST_NEXT_ACTIVITY, VALIDATE_POLICY, EXPLAIN_POLICY_ERROR, GUIDE_STEP_BY_STEP, OPTIMIZE_POLICY,
-  HELP_CREATE_POLICY, HELP_ACTIVATE_POLICY, EXPLAIN_NOTIFICATIONS, EXPLAIN_AI_POLICY_CREATION, EXPLAIN_AI_POLICY_EDITION, GENERAL_ADMIN_HELP.
+  HELP_CREATE_POLICY, HELP_ACTIVATE_POLICY, EXPLAIN_NOTIFICATIONS, EXPLAIN_AI_POLICY_CREATION, EXPLAIN_AI_POLICY_EDITION,
+  EXPLICAR_REPOSITORIO_DOCUMENTAL, EXPLICAR_PERMISOS_DOCUMENTALES, EXPLICAR_AUDITORIA_DOCUMENTAL, EXPLICAR_VERSIONES_DOCUMENTO,
+  AYUDA_DOCUMENTO_COLABORATIVO, AYUDA_CARGA_DOCUMENTO, AYUDA_CONSULTA_DOCUMENTO,
+  EXPLICAR_REQUISITOS_INICIALES, AYUDA_CONFIGURAR_REQUISITOS_INICIALES,
+  EXPLICAR_CLASIFICACION_IA, EXPLICAR_RECOMENDACION_IA, EXPLICAR_TRAZABILIDAD_INTERDEPARTAMENTAL,
+  EXPLICAR_TAREAS_COMPARTIDAS, GENERAL_ADMIN_HELP.
 - source: usa "AI".
 - available: true.
 
 Tipos sugeridos de formulario permitidos:
-TEXT, TEXTAREA, BOOLEAN, NUMBER, DATE, FILE, SELECT.
+TEXT, TEXTAREA, BOOLEAN, NUMBER, DATE, FILE, SELECT, DOCUMENTO_COLABORATIVO.
 
 Conocimiento Especifico Adicional:
 - Notificaciones: El administrador puede activar las notificaciones desde Chrome permitiendo las notificaciones del sitio (icono del candado o configuracion de Chrome -> Privacidad y seguridad -> Configuracion del sitio -> Notificaciones -> Permitir). Cuando esten activas, recibira avisos cada vez que un funcionario complete una tarea dentro de un tramite. Debe recargar o volver a iniciar sesion si fallan.
@@ -54,6 +59,10 @@ Conocimiento Especifico Adicional:
 - Auditoria Documental: Se registra automaticamente. El administrador puede verla desde la pagina de Politicas, entrando a "Auditoria", pestana "Auditoria documental". Ahi puede auditar cada archivo o abrir el documento.
 - Versiones de Documento: Dentro de "Auditoria documental", en documentos colaborativos, el administrador tiene un boton "Ver versiones" para ver el historial y abrir versiones pasadas, o en el mismo formulario del tramite si es colaborador.
 - Documentos Colaborativos (ONLYOFFICE): Para crear uno, en la edicion de la politica, agrega un campo de formulario de tipo DOCUMENTO_COLABORATIVO. Ahi podra configurar opciones como permisos por rol, auditoria, versionado, y si es Word, Excel, etc.
+- Requisitos Iniciales de Política: Los requisitos iniciales son campos o archivos que el usuario final debe completar obligatoriamente (o de forma opcional) antes de iniciar realmente un trámite. El administrador los configura dentro de la edición de la Política, en el apartado "Requisitos iniciales". Usa la misma lógica que los formularios dinámicos. Esto afecta directamente a la app móvil, ya que el usuario móvil verá esta pantalla antes de iniciar.
+- Clasificación de Solicitud (IA): Funcionalidad donde el usuario expresa su necesidad por texto/voz y la IA recomienda el trámite/política correspondiente. Para que una política sea recomendada, debe estar activa. La IA se basa en el nombre y descripción de la política.
+- Trazabilidad Interdepartamental: Es el historial del trámite. Permite ver el recorrido, qué departamento trabajó la tarea, y permite revisar la información inicial (requisitos iniciales) enviada por el usuario al crear la instancia del trámite.
+- Tareas Compartidas por Departamento: Ahora las tareas no se bloquean para un solo funcionario. Si un funcionario de un departamento toma una tarea, otros funcionarios del MISMO departamento pueden entrar y colaborar en la misma tarea simultáneamente.
 """.strip()
 
 

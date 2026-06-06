@@ -192,6 +192,62 @@ class ClasificadorIntencionAdministrador:
         ):
             return IntencionGuiaAdministrador.EXPLAIN_SCREEN
 
+        if self._contains_any(
+            normalized,
+            [
+                "requisitos iniciales",
+                "requisito inicial",
+                "antes de iniciar",
+            ],
+        ):
+            if self._contains_any(
+                normalized,
+                ["configurar", "agregar", "obligatorio", "opcional", "como hago", "como pido"],
+            ):
+                return IntencionGuiaAdministrador.AYUDA_CONFIGURAR_REQUISITOS_INICIALES
+            return IntencionGuiaAdministrador.EXPLICAR_REQUISITOS_INICIALES
+
+        if self._contains_any(
+            normalized,
+            [
+                "clasificacion",
+                "clasificar solicitud",
+                "agente inteligente",
+            ],
+        ):
+            return IntencionGuiaAdministrador.EXPLICAR_CLASIFICACION_IA
+
+        if self._contains_any(
+            normalized,
+            [
+                "recomendar",
+                "recomendacion",
+                "ia recomienda",
+                "recomendar politica",
+            ],
+        ):
+            return IntencionGuiaAdministrador.EXPLICAR_RECOMENDACION_IA
+
+        if self._contains_any(
+            normalized,
+            [
+                "trazabilidad",
+                "interdepartamental",
+                "historial",
+            ],
+        ):
+            return IntencionGuiaAdministrador.EXPLICAR_TRAZABILIDAD_INTERDEPARTAMENTAL
+
+        if self._contains_any(
+            normalized,
+            [
+                "tareas compartidas",
+                "tarea compartida",
+                "mismo departamento",
+            ],
+        ):
+            return IntencionGuiaAdministrador.EXPLICAR_TAREAS_COMPARTIDAS
+
         return IntencionGuiaAdministrador.GENERAL_ADMIN_HELP
 
     def _contains_any(self, text: str, options: list[str]) -> bool:

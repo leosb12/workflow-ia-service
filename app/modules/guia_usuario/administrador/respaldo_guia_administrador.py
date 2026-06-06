@@ -103,6 +103,16 @@ class RespaldoGuiaAdministrador:
         if intent == IntencionGuiaAdministrador.OPTIMIZE_POLICY:
             return self._build_optimization_response(request, intent, issues, suggested_actions)
 
+        if intent in {
+            IntencionGuiaAdministrador.EXPLICAR_REQUISITOS_INICIALES,
+            IntencionGuiaAdministrador.AYUDA_CONFIGURAR_REQUISITOS_INICIALES,
+            IntencionGuiaAdministrador.EXPLICAR_CLASIFICACION_IA,
+            IntencionGuiaAdministrador.EXPLICAR_RECOMENDACION_IA,
+            IntencionGuiaAdministrador.EXPLICAR_TRAZABILIDAD_INTERDEPARTAMENTAL,
+            IntencionGuiaAdministrador.EXPLICAR_TAREAS_COMPARTIDAS,
+        }:
+            return self._build_new_features_response(request, intent, issues, suggested_actions)
+
         return RespuestaGuiaAdministrador(
             answer=self._build_general_help_answer(request),
             steps=self._build_general_help_steps(request),
@@ -294,6 +304,66 @@ class RespaldoGuiaAdministrador:
             detectedIssues=issues,
             suggestedActions=suggested_actions,
             severity=self._severity_from_issues(issues),
+            intent=intent,
+        )
+
+    def _build_new_features_response(
+        self,
+        request: SolicitudGuiaAdministrador,
+        intent: IntencionGuiaAdministrador,
+        issues: list[ProblemaGuia],
+        suggested_actions: list[AccionSugerida],
+    ) -> RespuestaGuiaAdministrador:
+        if intent == IntencionGuiaAdministrador.EXPLICAR_REQUISITOS_INICIALES:
+            answer = "Los requisitos iniciales son datos o documentos que el sistema necesita antes de iniciar el trámite. Si la política los tiene configurados, el usuario final (móvil o web) deberá completarlos antes de que se cree la instancia del trámite."
+            steps = [
+                "Entra a la configuración de la política.",
+                "Ve al apartado de Requisitos Iniciales.",
+                "Ahí verás los campos o archivos que se solicitarán.",
+            ]
+        elif intent == IntencionGuiaAdministrador.AYUDA_CONFIGURAR_REQUISITOS_INICIALES:
+            answer = "Para configurar requisitos iniciales, entra a la configuración de la política, busca el apartado 'Requisitos iniciales' y agrega los campos necesarios. Puedes definir si cada campo es obligatorio u opcional."
+            steps = [
+                "Abre la política en edición.",
+                "Busca la pestaña o sección de Requisitos Iniciales.",
+                "Agrega un nuevo campo o archivo, y marca si es requerido u opcional.",
+                "Guarda la política.",
+            ]
+        elif intent == IntencionGuiaAdministrador.EXPLICAR_CLASIFICACION_IA:
+            answer = "La clasificación por IA permite que el usuario exprese su necesidad (por texto o voz) y el sistema analice qué trámite o política le corresponde. Para que la IA recomiende esta política, asegúrate de que tenga un nombre y descripción claros y esté activa."
+            steps = [
+                "Verifica que el nombre de la política sea claro.",
+                "Asegúrate de que la descripción explique bien para qué sirve el trámite.",
+                "Activa la política para que esté disponible para la IA.",
+            ]
+        elif intent == IntencionGuiaAdministrador.EXPLICAR_RECOMENDACION_IA:
+            answer = "La recomendación por IA sugiere la política más adecuada según la solicitud del usuario. Como administrador, tu rol es garantizar que las políticas estén bien descritas para que el modelo pueda inferir cuándo recomendarlas."
+            steps = [
+                "Usa descripciones detalladas en las políticas.",
+                "Mantén las políticas actualizadas y activas.",
+            ]
+        elif intent == IntencionGuiaAdministrador.EXPLICAR_TRAZABILIDAD_INTERDEPARTAMENTAL:
+            answer = "La trazabilidad interdepartamental es el historial completo del trámite, donde puedes ver por qué departamentos ha pasado, las tareas ejecutadas y los requisitos iniciales que cargó el usuario al principio."
+            steps = [
+                "Para verla, debes entrar al detalle de una instancia de trámite en curso o finalizada.",
+                "Ahí verás la pestaña o sección de Trazabilidad o Historial.",
+            ]
+        elif intent == IntencionGuiaAdministrador.EXPLICAR_TAREAS_COMPARTIDAS:
+            answer = "Las tareas compartidas significan que, dentro de un mismo departamento, cualquier funcionario puede entrar y colaborar en una tarea, incluso si otro compañero la tomó primero. Esto agiliza el flujo y no bloquea el trámite."
+            steps = [
+                "Verifica que la actividad esté asignada al departamento correcto.",
+                "Los permisos se aplicarán automáticamente a los miembros de ese departamento.",
+            ]
+        else:
+            answer = "Sobre esta funcionalidad, te sugiero revisar la documentación o la configuración actual del sistema."
+            steps = []
+
+        return RespuestaGuiaAdministrador(
+            answer=answer,
+            steps=steps,
+            detectedIssues=issues,
+            suggestedActions=suggested_actions,
+            severity=SeveridadGuia.INFO,
             intent=intent,
         )
 
