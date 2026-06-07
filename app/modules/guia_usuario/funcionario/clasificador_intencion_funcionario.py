@@ -248,6 +248,51 @@ class ClasificadorIntencionFuncionario:
         ):
             return IntencionGuiaFuncionario.EXPLICAR_POLITICA_RECOMENDADA_IA
 
+        if self._contains_any(
+            normalized,
+            [
+                "ruta",
+                "predecir ruta",
+                "mejor ruta",
+            ],
+        ):
+            return IntencionGuiaFuncionario.EXPLICAR_PREDICCION_RUTA
+
+        if self._contains_any(
+            normalized,
+            [
+                "cuello",
+                "botella",
+                "demora",
+                "sobrecarga",
+                "acumulacion",
+            ],
+        ):
+            return IntencionGuiaFuncionario.EXPLICAR_CUELLO_BOTELLA
+
+        if self._contains_any(
+            normalized,
+            [
+                "anomalia",
+                "extrano",
+                "anormal",
+                "tiempo excesivo",
+                "desviado",
+            ],
+        ):
+            return IntencionGuiaFuncionario.EXPLICAR_ANOMALIAS
+
+        if self._contains_any(
+            normalized,
+            [
+                "prioridad inteligente",
+                "prioridad",
+                "urgencia",
+                "riesgo de atraso",
+            ],
+        ):
+            return IntencionGuiaFuncionario.EXPLICAR_PRIORIDAD_INTELIGENTE
+
         return IntencionGuiaFuncionario.GENERAL_EMPLOYEE_HELP
 
     def _contains_any(self, text: str, options: list[str]) -> bool:

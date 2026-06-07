@@ -193,3 +193,12 @@ def test_employee_guide_profile_uses_heuristic_even_if_llm_is_available() -> Non
 
     assert response.source == "AI"
     assert "perfil" in response.answer.lower()
+
+
+def test_employee_guide_intent_classifier_predictive_features() -> None:
+    classifier = EmployeeGuideIntentClassifier()
+    
+    assert classifier.detect("cual es la mejor ruta", "TASK_FORM") == "EXPLICAR_PREDICCION_RUTA"
+    assert classifier.detect("por que hay cuellos de botella", "TASK_FORM") == "EXPLICAR_CUELLO_BOTELLA"
+    assert classifier.detect("hay alguna anomalia en este tramite", "TASK_FORM") == "EXPLICAR_ANOMALIAS"
+    assert classifier.detect("como se calcula la prioridad inteligente", "TASK_FORM") == "EXPLICAR_PRIORIDAD_INTELIGENTE"

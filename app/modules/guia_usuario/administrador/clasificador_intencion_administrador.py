@@ -248,6 +248,51 @@ class ClasificadorIntencionAdministrador:
         ):
             return IntencionGuiaAdministrador.EXPLICAR_TAREAS_COMPARTIDAS
 
+        if self._contains_any(
+            normalized,
+            [
+                "ruta",
+                "predecir ruta",
+                "mejor ruta",
+            ],
+        ):
+            return IntencionGuiaAdministrador.EXPLICAR_PREDICCION_RUTA
+
+        if self._contains_any(
+            normalized,
+            [
+                "cuello",
+                "botella",
+                "demora",
+                "sobrecarga",
+                "acumulacion",
+            ],
+        ):
+            return IntencionGuiaAdministrador.EXPLICAR_CUELLO_BOTELLA
+
+        if self._contains_any(
+            normalized,
+            [
+                "anomalia",
+                "extrano",
+                "anormal",
+                "tiempo excesivo",
+                "desviado",
+            ],
+        ):
+            return IntencionGuiaAdministrador.EXPLICAR_ANOMALIAS
+
+        if self._contains_any(
+            normalized,
+            [
+                "prioridad inteligente",
+                "prioridad",
+                "urgencia",
+                "riesgo de atraso",
+            ],
+        ):
+            return IntencionGuiaAdministrador.EXPLICAR_PRIORIDAD_INTELIGENTE
+
         return IntencionGuiaAdministrador.GENERAL_ADMIN_HELP
 
     def _contains_any(self, text: str, options: list[str]) -> bool:

@@ -41,7 +41,8 @@ Reglas:
   AYUDA_DOCUMENTO_COLABORATIVO, AYUDA_CARGA_DOCUMENTO, AYUDA_CONSULTA_DOCUMENTO,
   EXPLICAR_REQUISITOS_INICIALES, AYUDA_CONFIGURAR_REQUISITOS_INICIALES,
   EXPLICAR_CLASIFICACION_IA, EXPLICAR_RECOMENDACION_IA, EXPLICAR_TRAZABILIDAD_INTERDEPARTAMENTAL,
-  EXPLICAR_TAREAS_COMPARTIDAS, GENERAL_ADMIN_HELP.
+  EXPLICAR_TAREAS_COMPARTIDAS, EXPLICAR_PREDICCION_RUTA, EXPLICAR_CUELLO_BOTELLA,
+  EXPLICAR_ANOMALIAS, EXPLICAR_PRIORIDAD_INTELIGENTE, GENERAL_ADMIN_HELP.
 - source: usa "AI".
 - available: true.
 
@@ -63,6 +64,7 @@ Conocimiento Especifico Adicional:
 - Clasificación de Solicitud (IA): Funcionalidad donde el usuario expresa su necesidad por texto/voz y la IA recomienda el trámite/política correspondiente. Para que una política sea recomendada, debe estar activa. La IA se basa en el nombre y descripción de la política.
 - Trazabilidad Interdepartamental: Es el historial del trámite. Permite ver el recorrido, qué departamento trabajó la tarea, y permite revisar la información inicial (requisitos iniciales) enviada por el usuario al crear la instancia del trámite.
 - Tareas Compartidas por Departamento: Ahora las tareas no se bloquean para un solo funcionario. Si un funcionario de un departamento toma una tarea, otros funcionarios del MISMO departamento pueden entrar y colaborar en la misma tarea simultáneamente.
+- Predicciones IA (CU-39, CU-40, CU-41, CU-42): Las predicciones no están en un menú separado de analíticas. Se realizan **dentro del editor de la política** (canvas) con el botón "Predicciones IA", que abre el modal "Análisis Predictivo Inteligente". Allí se seleccionan las dimensiones (Ruta, Cuellos de Botella, Anomalías, Prioridad) y se genera el informe. Funciona utilizando **Deep Learning, Procesamiento de Lenguaje Natural (Semántico) y Keras** en el ia-deep-learning-service. **IMPORTANTE:** La predicción analiza la ESTRUCTURA de la política (nombres de actividades, nodos, descripciones, flujos, bucles). **No necesita que la política tenga actividad previa o datos históricos de uso**. Es capaz de predecir comportamientos en políticas totalmente nuevas basándose en su conocimiento semántico.
 """.strip()
 
 

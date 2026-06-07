@@ -1,0 +1,292 @@
+{
+  "info": {
+    "name": "IA Reportes Dinámicos",
+    "_postman_id": "ia-reportes-dinamicos-collection",
+    "description": "Colección de Postman para probar el sistema de Reportes Dinámicos Inteligentes, tanto directamente en el microservicio de Python (puerto 8010) como a través del backend en Spring Boot (puerto 8080).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "iaUrl",
+      "value": "http://localhost:8010",
+      "type": "string"
+    },
+    {
+      "key": "adminUserId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Microservicio Python (ia-deep-learning-service)",
+      "item": [
+        {
+          "name": "Interpretar consulta directamente en Python",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"texto\": \"ranking de politicas mas utilizadas en este mes\",\n  \"usuarioId\": \"{{adminUserId}}\",\n  \"rol\": \"ADMIN\"\n}"
+            },
+            "url": {
+              "raw": "{{iaUrl}}/api/ia/reportes/interpretar",
+              "host": [
+                "{{iaUrl}}"
+              ],
+              "path": [
+                "api",
+                "ia",
+                "reportes",
+                "interpretar"
+              ]
+            },
+            "description": "Llama directamente al microservicio de Python en FastAPI para procesar el lenguaje natural y generar la intención estructurada del reporte."
+          }
+        },
+        {
+          "name": "Transcribir Audio (Stub)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"audio_base64\": \"U3VwZXJTZWNyZXRCYXNlNjRTdHJpbmc=\"\n}"
+            },
+            "url": {
+              "raw": "{{iaUrl}}/api/ia/reportes/transcribir",
+              "host": [
+                "{{iaUrl}}"
+              ],
+              "path": [
+                "api",
+                "ia",
+                "reportes",
+                "transcribir"
+              ]
+            },
+            "description": "Simula la transcripción de un audio base64 de entrada en texto transcrito."
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Spring Boot Backend (Puerto 8080)",
+      "item": [
+        {
+          "name": "Login de Administrador (Obtener ID)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.id) {",
+                  "    pm.collectionVariables.set(\"adminUserId\", jsonData.id);",
+                  "    console.log(\"adminUserId guardado automáticamente: \" + jsonData.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"correo\": \"admin@demo.com\",\n  \"password\": \"123456\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/web/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "web",
+                "login"
+              ]
+            },
+            "description": "Autentica al administrador y guarda automáticamente su ID como variable de colección para usar en las siguientes peticiones."
+          }
+        },
+        {
+          "name": "Obtener Catálogo de Reportes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/reportes/catalogo",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "reportes",
+                "catalogo"
+              ]
+            },
+            "description": "Obtiene la lista de entidades principales, campos y operaciones soportados por el generador de reportes dinámicos."
+          }
+        },
+        {
+          "name": "Interpretar consulta con IA (Backend)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Admin-User-Id",
+                "value": "{{adminUserId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"texto\": \"ranking de politicas mas utilizadas en este mes\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/reportes/interpretar",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "reportes",
+                "interpretar"
+              ]
+            },
+            "description": "Pasa la consulta en lenguaje natural a través de Spring Boot, el cual consume la IA en Python para interpretar el reporte y estructurarlo."
+          }
+        },
+        {
+          "name": "Generar Vista Previa (Preview)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Admin-User-Id",
+                "value": "{{adminUserId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titulo\": \"Reporte Dinámico Generado\",\n  \"descripcion\": \"Interpretación de: 'ranking de politicas mas utilizadas en este mes'\",\n  \"intencionDetectada\": \"ranking_politicas_mas_utilizadas\",\n  \"entidadPrincipal\": \"instancias_politica\",\n  \"campos\": [],\n  \"metricas\": [\n    {\n      \"operacion\": \"count\",\n      \"campo\": \"id\",\n      \"alias\": \"cantidadTramites\"\n    }\n  ],\n  \"filtros\": [\n    {\n      \"campo\": \"fechaCreacion\",\n      \"operador\": \"mes_actual\",\n      \"valor\": null\n    }\n  ],\n  \"agrupaciones\": [\n    \"politicaNombre\"\n  ],\n  \"ordenamiento\": [\n    {\n      \"campo\": \"cantidadTramites\",\n      \"direccion\": \"desc\"\n    }\n  ],\n  \"limite\": 100,\n  \"formatoSalida\": \"pantalla\",\n  \"visualizacion\": \"grafico_barras\",\n  \"requiereAclaracion\": false,\n  \"preguntaAclaratoria\": null,\n  \"confianza\": 0.95\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/reportes/preview?textoOriginal=ranking de politicas mas utilizadas en este mes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "reportes",
+                "preview"
+              ],
+              "query": [
+                {
+                  "key": "textoOriginal",
+                  "value": "ranking de politicas mas utilizadas en este mes"
+                }
+              ]
+            },
+            "description": "Recibe la definición de consulta JSON (que retorna el endpoint interpretar) y ejecuta las agregaciones de MongoDB correspondientes, guardándolo en el historial y retornando los registros."
+          }
+        },
+        {
+          "name": "Exportar Reporte (Excel, PDF, Word)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"interpretacion\": {\n    \"titulo\": \"Reporte Dinámico Generado\",\n    \"descripcion\": \"Interpretación de: 'ranking de politicas mas utilizadas en este mes'\",\n    \"intencionDetectada\": \"ranking_politicas_mas_utilizadas\",\n    \"entidadPrincipal\": \"instancias_politica\",\n    \"campos\": [],\n    \"metricas\": [\n      {\n        \"operacion\": \"count\",\n        \"campo\": \"id\",\n        \"alias\": \"cantidadTramites\"\n      }\n    ],\n    \"filtros\": [\n      {\n        \"campo\": \"fechaCreacion\",\n        \"operador\": \"mes_actual\",\n        \"valor\": null\n      }\n    ],\n    \"agrupaciones\": [\n      \"politicaNombre\"\n    ],\n    \"ordenamiento\": [\n      {\n        \"campo\": \"cantidadTramites\",\n        \"direccion\": \"desc\"\n      }\n    ],\n    \"limite\": 100,\n    \"formatoSalida\": \"pantalla\",\n    \"visualizacion\": \"grafico_barras\",\n    \"requiereAclaracion\": false,\n    \"preguntaAclaratoria\": null,\n    \"confianza\": 0.95\n  },\n  \"resultados\": [\n    {\n      \"politicaNombre\": \"Solicitud de Crédito\",\n      \"cantidadTramites\": 12\n    },\n    {\n      \"politicaNombre\": \"Instalación de Medidor\",\n      \"cantidadTramites\": 5\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/reportes/exportar?formato=excel",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "reportes",
+                "exportar"
+              ],
+              "query": [
+                {
+                  "key": "formato",
+                  "value": "excel",
+                  "description": "Formatos soportados: excel, pdf, word"
+                }
+              ]
+            },
+            "description": "Toma los resultados y la interpretación generada y los empaqueta en un archivo descargable (.xlsx, .pdf, .docx)."
+          }
+        },
+        {
+          "name": "Consultar Historial de Reportes Generados",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Admin-User-Id",
+                "value": "{{adminUserId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/reportes/historial",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "reportes",
+                "historial"
+              ]
+            },
+            "description": "Obtiene la lista de los últimos reportes dinámicos que se han generado y persistido en la base de datos."
+          }
+        }
+      ]
+    }
+  ]
+}

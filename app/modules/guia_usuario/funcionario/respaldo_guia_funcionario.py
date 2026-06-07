@@ -153,6 +153,10 @@ class RespaldoGuiaFuncionario:
             EmployeeGuideIntent.EXPLICAR_TAREAS_COMPARTIDAS,
             EmployeeGuideIntent.EXPLICAR_SOLICITUD_ORIGINAL_USUARIO,
             EmployeeGuideIntent.EXPLICAR_POLITICA_RECOMENDADA_IA,
+            EmployeeGuideIntent.EXPLICAR_PREDICCION_RUTA,
+            EmployeeGuideIntent.EXPLICAR_CUELLO_BOTELLA,
+            EmployeeGuideIntent.EXPLICAR_ANOMALIAS,
+            EmployeeGuideIntent.EXPLICAR_PRIORIDAD_INTELIGENTE,
         }:
             return self._build_new_features_response(request, intent, suggested_actions)
 
@@ -554,6 +558,18 @@ class RespaldoGuiaFuncionario:
                 "Revisa la trazabilidad del trámite.",
                 "Ahí verás la clasificación y la política sugerida inicialmente.",
             ]
+        elif intent == EmployeeGuideIntent.EXPLICAR_PREDICCION_RUTA:
+            answer = "La ruta óptima recomendada proviene de un modelo de Deep Learning generado por el administrador. Tú solo debes seguir la recomendación sugerida en tu pantalla si aplica."
+            steps = ["Revisa la recomendación de ruta (si está disponible en tu pantalla).", "Toma la decisión operativa que consideres correcta."]
+        elif intent == EmployeeGuideIntent.EXPLICAR_CUELLO_BOTELLA:
+            answer = "Los cuellos de botella se analizan con Deep Learning. Como funcionario, solo verás advertencias si tus tareas están en riesgo de demora."
+            steps = ["Revisa si tienes tareas marcadas en rojo o atrasadas.", "Prioriza las tareas más urgentes en tu bandeja."]
+        elif intent == EmployeeGuideIntent.EXPLICAR_ANOMALIAS:
+            answer = "Si la IA detecta una anomalía mediante Deep Learning (tiempos anormales, fallos), te alertará para que la revises."
+            steps = ["Verifica los documentos y datos de la tarea alertada.", "Asegúrate de que no falte información clave."]
+        elif intent == EmployeeGuideIntent.EXPLICAR_PRIORIDAD_INTELIGENTE:
+            answer = "La prioridad de las tareas se calcula con modelos de Inteligencia Artificial (Deep Learning) gestionados por el administrador. Solo atiende el orden asignado."
+            steps = ["Entra a Mis Tareas.", "Atiende primero las que tengan Prioridad Alta."]
         else:
             answer = "Esta función se consulta desde el detalle de la tarea o la trazabilidad del trámite."
             steps = []

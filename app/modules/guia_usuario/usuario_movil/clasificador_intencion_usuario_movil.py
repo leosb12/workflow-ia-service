@@ -215,6 +215,51 @@ class ClasificadorIntencionUsuarioMovil:
         ):
             return IntencionGuiaUsuarioMovil.EXPLICAR_PANTALLA
 
+        if self._contains_any(
+            normalizada,
+            [
+                "ruta",
+                "predecir ruta",
+                "mejor ruta",
+            ],
+        ):
+            return IntencionGuiaUsuarioMovil.EXPLICAR_PREDICCION_RUTA
+
+        if self._contains_any(
+            normalizada,
+            [
+                "cuello",
+                "botella",
+                "demora",
+                "sobrecarga",
+                "acumulacion",
+            ],
+        ):
+            return IntencionGuiaUsuarioMovil.EXPLICAR_CUELLO_BOTELLA
+
+        if self._contains_any(
+            normalizada,
+            [
+                "anomalia",
+                "extrano",
+                "anormal",
+                "tiempo excesivo",
+                "desviado",
+            ],
+        ):
+            return IntencionGuiaUsuarioMovil.EXPLICAR_ANOMALIAS
+
+        if self._contains_any(
+            normalizada,
+            [
+                "prioridad inteligente",
+                "prioridad",
+                "urgencia",
+                "riesgo de atraso",
+            ],
+        ):
+            return IntencionGuiaUsuarioMovil.EXPLICAR_PRIORIDAD_INTELIGENTE
+
         return IntencionGuiaUsuarioMovil.AYUDA_GENERAL_USUARIO_MOVIL
 
     def _contains_any(self, text: str, options: list[str]) -> bool:

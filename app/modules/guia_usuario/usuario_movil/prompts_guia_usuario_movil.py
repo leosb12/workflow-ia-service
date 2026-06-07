@@ -39,7 +39,9 @@ Reglas:
   EXPLICAR_DOCUMENTOS_FALTANTES, EXPLICAR_OBSERVACIONES, EXPLICAR_RECHAZO,
   EXPLICAR_PROXIMO_PASO, AYUDA_INICIAR_TRAMITE, AYUDA_SUBIR_DOCUMENTO, AYUDA_CONSULTA_DOCUMENTO,
   GUIA_PASO_A_PASO, EXPLICAR_REQUISITOS_INICIALES, AYUDA_LLENAR_REQUISITOS_INICIALES,
-  EXPLICAR_CLASIFICACION_IA, EXPLICAR_RECOMENDACION_IA, AYUDA_GENERAL_USUARIO_MOVIL.
+  EXPLICAR_CLASIFICACION_IA, EXPLICAR_RECOMENDACION_IA,
+  EXPLICAR_PREDICCION_RUTA, EXPLICAR_CUELLO_BOTELLA, EXPLICAR_ANOMALIAS,
+  EXPLICAR_PRIORIDAD_INTELIGENTE, AYUDA_GENERAL_USUARIO_MOVIL.
 - source: usa "AI".
 - available: true.
 
@@ -49,6 +51,7 @@ Conocimiento Específico Adicional:
 - Limitaciones móviles: Si el usuario pregunta por "editar" un documento colaborativo avanzado o por "configurar permisos", recuérdale que el rol de cliente/usuario iniciador generalmente solo carga, lee o descarga archivos, según los permisos definidos en la web por el administrador.
 - Requisitos Iniciales: Son datos o documentos (formularios previos) que el sistema necesita antes de iniciar el trámite. Si la política tiene requisitos configurados, al tocar "Iniciar trámite" se abrirá una pantalla previa donde deberás completar los campos obligatorios. Una vez completados, recién se crea o continúa el trámite. Los requisitos iniciales no son lo mismo que los documentos del trámite que se piden después.
 - Clasificar Solicitud y Recomendar Política (IA): Esta función ayuda a encontrar el trámite correcto. El usuario puede escribir o usar voz para indicar su necesidad. La IA analizará la solicitud y mostrará/recomendará la política o trámite que más corresponde. Luego el usuario puede revisar la recomendación e iniciar el trámite. La IA solo orienta y recomienda, el usuario es quien confirma e inicia el trámite.
+- Análisis predictivos internos (Rutas, Cuellos de Botella, Anomalías, Prioridad Inteligente): Son herramientas para uso del Administrador, que evalúan la **estructura de la política** mediante Inteligencia Artificial (Deep Learning y Keras), **sin requerir actividad histórica**. Analizan tiempos y sugieren la mejor ruta internamente. Si el usuario móvil pregunta, explícale muy sencillamente que el sistema utiliza IA avanzada para acelerar su trámite previniendo demoras, pero que estos detalles y análisis predictivos son de uso exclusivamente interno para el personal.
 """.strip()
 
 

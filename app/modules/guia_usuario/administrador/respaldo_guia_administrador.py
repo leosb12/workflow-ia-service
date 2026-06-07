@@ -110,6 +110,10 @@ class RespaldoGuiaAdministrador:
             IntencionGuiaAdministrador.EXPLICAR_RECOMENDACION_IA,
             IntencionGuiaAdministrador.EXPLICAR_TRAZABILIDAD_INTERDEPARTAMENTAL,
             IntencionGuiaAdministrador.EXPLICAR_TAREAS_COMPARTIDAS,
+            IntencionGuiaAdministrador.EXPLICAR_PREDICCION_RUTA,
+            IntencionGuiaAdministrador.EXPLICAR_CUELLO_BOTELLA,
+            IntencionGuiaAdministrador.EXPLICAR_ANOMALIAS,
+            IntencionGuiaAdministrador.EXPLICAR_PRIORIDAD_INTELIGENTE,
         }:
             return self._build_new_features_response(request, intent, issues, suggested_actions)
 
@@ -354,6 +358,18 @@ class RespaldoGuiaAdministrador:
                 "Verifica que la actividad esté asignada al departamento correcto.",
                 "Los permisos se aplicarán automáticamente a los miembros de ese departamento.",
             ]
+        elif intent == IntencionGuiaAdministrador.EXPLICAR_PREDICCION_RUTA:
+            answer = "La predicción de mejor ruta funciona usando Deep Learning y Análisis Semántico. Para generarla, debes estar en el editor de la política, presionar el botón 'Predicciones IA' y seleccionar la opción en el modal."
+            steps = ["Abre el editor de la política (canvas).", "Haz clic en el botón 'Predicciones IA'.", "Selecciona 'Mejor Ruta Óptima' y genera el informe predictivo."]
+        elif intent == IntencionGuiaAdministrador.EXPLICAR_CUELLO_BOTELLA:
+            answer = "La predicción de cuellos de botella usa Deep Learning (Keras) para detectar riesgos. Se configura desde el botón 'Predicciones IA' dentro del propio editor de la política."
+            steps = ["Entra al editor de políticas.", "Haz clic en 'Predicciones IA'.", "Selecciona 'Riesgos y Cuellos de Botella' para evaluar la política actual."]
+        elif intent == IntencionGuiaAdministrador.EXPLICAR_ANOMALIAS:
+            answer = "La detección de anomalías usa modelos predictivos Deep Learning. La puedes ejecutar directamente en el editor de la política mediante el botón 'Predicciones IA'."
+            steps = ["Ve al diseñador de la política.", "Abre el modal con el botón 'Predicciones IA'.", "Marca 'Anomalías y Desviaciones' y genera tu análisis."]
+        elif intent == IntencionGuiaAdministrador.EXPLICAR_PRIORIDAD_INTELIGENTE:
+            answer = "La sugerencia de prioridad usa Inteligencia Artificial y Deep Learning. Se simula y evalúa abriendo el modal de 'Predicciones IA' dentro del diseñador de políticas."
+            steps = ["Abre la política en el canvas.", "Usa el botón 'Predicciones IA'.", "Selecciona 'Sugerencia de Prioridad' en la configuración del análisis."]
         else:
             answer = "Sobre esta funcionalidad, te sugiero revisar la documentación o la configuración actual del sistema."
             steps = []

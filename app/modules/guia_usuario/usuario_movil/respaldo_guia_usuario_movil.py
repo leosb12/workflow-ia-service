@@ -157,6 +157,10 @@ class RespaldoGuiaUsuarioMovil:
             IntencionGuiaUsuarioMovil.AYUDA_LLENAR_REQUISITOS_INICIALES,
             IntencionGuiaUsuarioMovil.EXPLICAR_CLASIFICACION_IA,
             IntencionGuiaUsuarioMovil.EXPLICAR_RECOMENDACION_IA,
+            IntencionGuiaUsuarioMovil.EXPLICAR_PREDICCION_RUTA,
+            IntencionGuiaUsuarioMovil.EXPLICAR_CUELLO_BOTELLA,
+            IntencionGuiaUsuarioMovil.EXPLICAR_ANOMALIAS,
+            IntencionGuiaUsuarioMovil.EXPLICAR_PRIORIDAD_INTELIGENTE,
         }:
             return self._build_new_features_response(request, intent, acciones_sugeridas)
 
@@ -514,6 +518,14 @@ class RespaldoGuiaUsuarioMovil:
                 "Si es correcta, confirma e inicia el trámite.",
                 "Si la recomendación no es correcta, intenta ser más específico en tu solicitud.",
             ]
+        elif intent in {
+            IntencionGuiaUsuarioMovil.EXPLICAR_PREDICCION_RUTA,
+            IntencionGuiaUsuarioMovil.EXPLICAR_CUELLO_BOTELLA,
+            IntencionGuiaUsuarioMovil.EXPLICAR_ANOMALIAS,
+            IntencionGuiaUsuarioMovil.EXPLICAR_PRIORIDAD_INTELIGENTE
+        }:
+            answer = "El sistema usa modelos de Inteligencia Artificial (Deep Learning) de manera interna para agilizar tu trámite evitando demoras, pero estos detalles técnicos y de configuración no se muestran en la app móvil."
+            steps = ["Puedes estar tranquilo de que el sistema optimiza tu trámite.", "Revisa el estado de tu trámite normalmente."]
         else:
             answer = "Esta función te ayuda a encontrar y completar tu solicitud más rápido."
             steps = []

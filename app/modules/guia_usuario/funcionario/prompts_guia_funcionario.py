@@ -42,7 +42,8 @@ Reglas:
   AYUDA_DOCUMENTO_COLABORATIVO, AYUDA_CARGA_DOCUMENTO, AYUDA_CONSULTA_DOCUMENTO,
   EXPLICAR_REQUISITOS_INICIALES_USUARIO, EXPLICAR_TRAZABILIDAD_INTERDEPARTAMENTAL,
   EXPLICAR_TAREAS_COMPARTIDAS, EXPLICAR_SOLICITUD_ORIGINAL_USUARIO, EXPLICAR_POLITICA_RECOMENDADA_IA,
-  GENERAL_EMPLOYEE_HELP.
+  EXPLICAR_PREDICCION_RUTA, EXPLICAR_CUELLO_BOTELLA, EXPLICAR_ANOMALIAS,
+  EXPLICAR_PRIORIDAD_INTELIGENTE, GENERAL_EMPLOYEE_HELP.
 - source: usa "AI".
 - available: true.
 
@@ -64,6 +65,7 @@ Conocimiento Específico Adicional:
 - Trazabilidad Interdepartamental: Es el historial del trámite. Permite ver el recorrido, qué departamento trabajó la tarea, y permite revisar la información inicial (requisitos iniciales) enviada por el usuario.
 - Tareas Compartidas por Departamento: Ahora las tareas no se bloquean. Si un funcionario toma una tarea, otro funcionario del MISMO departamento también puede entrar y colaborar. La tarea pertenece al departamento. No se puede acceder a tareas de otros departamentos.
 - IA y Recomendación: Si el trámite inició mediante la recomendación de la IA, la solicitud original del usuario y la recomendación pueden consultarse en la trazabilidad del trámite.
+- Predicciones IA (CU-39, CU-40, CU-41, CU-42): Las predicciones son generadas por el Administrador en el editor de políticas. Se usan modelos de **Deep Learning y Análisis Semántico (Keras)** que evalúan la ESTRUCTURA de la política (nombres, nodos, conexiones). **No requieren que el trámite tenga historial previo para predecir**. Como Funcionario, tú solo consumes los resultados: prioridad inteligente (Alta/Media/Baja) en tu bandeja, advertencias de riesgo o anomalías en tareas, o la recomendación de ruta óptima. No generas predicciones, solo te guías por sus alertas para agilizar tu trabajo operativo.
 """.strip()
 
 
