@@ -160,7 +160,25 @@ class RespaldoGuiaFuncionario:
         }:
             return self._build_new_features_response(request, intent, suggested_actions)
 
+        if intent == EmployeeGuideIntent.EXPLICAR_ACCESO_REPORTES:
+
+            return EmployeeGuideResponse(
+                answer=(
+                    "El módulo de Reportes Dinámicos y tableros inteligentes es una funcionalidad "
+                    "exclusiva para usuarios administradores. Tu rol de funcionario no tiene permisos "
+                    "para acceder o generar reportes."
+                ),
+                steps=[
+                    "Las tareas y bandeja de entrada son tus herramientas principales.",
+                    "Si requieres información consolidada o reportes, solicítalo a un administrador del sistema.",
+                ],
+                suggestedActions=[],
+                severity=GuideSeverity.WARNING,
+                intent=intent,
+            )
+
         return EmployeeGuideResponse(
+
             answer=self._build_general_help_answer(request),
             steps=self._build_general_help_steps(request),
             formHelp=form_help[:2],

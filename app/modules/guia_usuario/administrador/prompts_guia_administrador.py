@@ -42,7 +42,10 @@ Reglas:
   EXPLICAR_REQUISITOS_INICIALES, AYUDA_CONFIGURAR_REQUISITOS_INICIALES,
   EXPLICAR_CLASIFICACION_IA, EXPLICAR_RECOMENDACION_IA, EXPLICAR_TRAZABILIDAD_INTERDEPARTAMENTAL,
   EXPLICAR_TAREAS_COMPARTIDAS, EXPLICAR_PREDICCION_RUTA, EXPLICAR_CUELLO_BOTELLA,
-  EXPLICAR_ANOMALIAS, EXPLICAR_PRIORIDAD_INTELIGENTE, GENERAL_ADMIN_HELP.
+  EXPLICAR_ANOMALIAS, EXPLICAR_PRIORIDAD_INTELIGENTE,
+  EXPLICAR_REPORTES_DINAMICOS, GUIDE_CREATE_DYNAMIC_REPORT, EXPLAIN_EXPORT_FORMATS, AYUDA_REPORTES_DINAMICOS,
+  GENERAL_ADMIN_HELP.
+
 - source: usa "AI".
 - available: true.
 
@@ -65,6 +68,22 @@ Conocimiento Especifico Adicional:
 - Trazabilidad Interdepartamental: Es el historial del trámite. Permite ver el recorrido, qué departamento trabajó la tarea, y permite revisar la información inicial (requisitos iniciales) enviada por el usuario al crear la instancia del trámite.
 - Tareas Compartidas por Departamento: Ahora las tareas no se bloquean para un solo funcionario. Si un funcionario de un departamento toma una tarea, otros funcionarios del MISMO departamento pueden entrar y colaborar en la misma tarea simultáneamente.
 - Predicciones IA (CU-39, CU-40, CU-41, CU-42): Las predicciones no están en un menú separado de analíticas. Se realizan **dentro del editor de la política** (canvas) con el botón "Predicciones IA", que abre el modal "Análisis Predictivo Inteligente". Allí se seleccionan las dimensiones (Ruta, Cuellos de Botella, Anomalías, Prioridad) y se genera el informe. Funciona utilizando **Deep Learning, Procesamiento de Lenguaje Natural (Semántico) y Keras** en el ia-deep-learning-service. **IMPORTANTE:** La predicción analiza la ESTRUCTURA de la política (nombres de actividades, nodos, descripciones, flujos, bucles). **No necesita que la política tenga actividad previa o datos históricos de uso**. Es capaz de predecir comportamientos en políticas totalmente nuevas basándose en su conocimiento semántico.
+- Reportes Dinámicos Visuales e Inteligentes: Permiten al administrador generar visualizaciones, métricas y dashboards completos escribiendo instrucciones sencillas en lenguaje natural. Se accede desde el menú superior 'Analítica' -> 'Reportes Inteligentes' (ruta real del módulo: `/admin/reportes-inteligentes`). El componente Angular es `ReportesInteligentesComponent` y consume el servicio `ReportesDinamicosService` (endpoint de generación en Spring Boot: `/api/admin/reportes-visuales/generar`).
+- Botones en Pantalla del Módulo de Reportes: 
+  1. 'Generar Reporte' (btn-generate): Envía la instrucción natural escrita. Si el prompt no incluye un formato explícito, abre un modal de formato.
+  2. 'Limpiar' (btn-clear): Limpia el prompt actual y oculta el reporte generado en pantalla.
+  3. 'IA+' (ia-plus-toggle): Interruptor que permite habilitar el modo "IA+". Cuando está activo, el backend recupera nombres reales de usuarios y políticas de la BD para resolver coincidencias exactas en el análisis semántico de la IA.
+- Formatos de Exportación y Visualización Disponibles:
+  1. En Pantalla: Dashboard interactivo responsivo con gráficos ECharts y tablas HTML.
+  2. Documento PDF: Usa jsPDF en el cliente con un diseño premium oscuro.
+  3. Hoja de Excel: Usa exceljs mapeando datos e incrustando el gráfico PNG en base64.
+  4. Documento Word: Genera un archivo docx editable usando Blob HTML ms-word.
+  5. Presentación PowerPoint: Usa pptxgenjs en formato 16:9 con gráficos y KPIs listos para exponer.
+- Diferencia entre Pantalla y Exportar: Ver en pantalla ofrece interactividad con tooltips y leyendas de ECharts. Exportar genera un renderizado off-screen oculto (`#offscreen-export-container`), convierte el canvas de ECharts a PNG base64 y descarga el archivo empaquetado en el cliente sin guardarlo en el servidor.
+- Diagnóstico y Falta de Datos: Si un reporte no muestra datos o arroja error, el backend `ReportesDinamicosService` proporciona un objeto de diagnóstico (colección vacía, campos inválidos o no catalogados en `ReporteCatalogoService.java`). Si la IA no entiende la solicitud, se recomienda usar las "Sugerencias rápidas" de la cuadrícula inferior, escribir prompts más estructurados usando palabras del catálogo de datos o activar la opción "IA+".
+- Entidades y Filtros Permitidos: Las colecciones permitidas en el catálogo para reportes son: `instancias_politica` (trámites), `politicas_negocio` (workflows), `usuarios`, `departamentos`, `tareas_actividad`, `pagos`, `archivos_adjuntos` (documentos), `historial_instancia` (trazabilidad), `predicciones_ia` (riesgo y anomalías) y `notificaciones`. Se pueden usar filtros de fechas ("mes actual", "hoy"), estados ("EN_CURSO", "FINALIZADA", "PENDIENTE_PAGO", "PAGADO", "CANCELADO"), funcionarios, departamentos, políticas o trámites.
+- Reportes Combinados: El administrador puede pedir reportes multibloque combinando en una sola vista KPI, gráficos de barras, líneas, tortas, matrices y tablas en un solo prompt (ej: "gráfico de barras de funcionarios, abajo una torta de trámites por estado y una tabla").
+
 """.strip()
 
 

@@ -293,7 +293,86 @@ class ClasificadorIntencionAdministrador:
         ):
             return IntencionGuiaAdministrador.EXPLICAR_PRIORIDAD_INTELIGENTE
 
+        # Clasificaciones para reportes dinámicos
+        if self._contains_any(
+            normalized,
+            [
+                "que son los reportes dinamicos",
+                "para que sirven los reportes",
+                "que significa reporte dinamico",
+                "que son reportes dinamicos",
+                "que es reporte dinamico",
+            ],
+        ):
+            return IntencionGuiaAdministrador.EXPLICAR_REPORTES_DINAMICOS
+
+        if self._contains_any(
+            normalized,
+            [
+                "como hago un reporte",
+                "como crear un reporte",
+                "como pedir reportes",
+                "escribo para pedir",
+                "como hago un dashboard",
+                "grafico de barras",
+                "torta",
+                "dona",
+                "tabla",
+                "matriz",
+                "ranking",
+                "kpi",
+                "graficos",
+                "visualizacion",
+                "visualizar",
+                "filtros",
+                "fecha",
+                "estado",
+                "funcionario",
+                "departamento",
+                "politica",
+                "usuario",
+                "tramite",
+            ],
+        ):
+            return IntencionGuiaAdministrador.GUIDE_CREATE_DYNAMIC_REPORT
+
+        if self._contains_any(
+            normalized,
+            [
+                "exportar",
+                "pdf",
+                "excel",
+                "word",
+                "powerpoint",
+                "descargar",
+                "descargarlo",
+                "diferencia entre word y pdf",
+                "diferencia entre ver",
+                "para que sirve powerpoint",
+                "pantalla",
+                "hoja de calculo",
+            ],
+        ):
+            return IntencionGuiaAdministrador.EXPLAIN_EXPORT_FORMATS
+
+        if self._contains_any(
+            normalized,
+            [
+                "no aparecen datos",
+                "no cargan datos",
+                "no entiendo",
+                "no entiende",
+                "por que no aparecen",
+                "error en el reporte",
+            ],
+        ) or (screen == PantallaGuia.ADMIN_REPORTS and self._contains_any(
+            normalized,
+            ["ayuda", "orientame", "explicame", "que hago aqui"],
+        )):
+            return IntencionGuiaAdministrador.AYUDA_REPORTES_DINAMICOS
+
         return IntencionGuiaAdministrador.GENERAL_ADMIN_HELP
+
 
     def _contains_any(self, text: str, options: list[str]) -> bool:
         return any(option in text for option in options)

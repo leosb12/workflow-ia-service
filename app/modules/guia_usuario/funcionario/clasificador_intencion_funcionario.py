@@ -293,7 +293,25 @@ class ClasificadorIntencionFuncionario:
         ):
             return IntencionGuiaFuncionario.EXPLICAR_PRIORIDAD_INTELIGENTE
 
+        if self._contains_any(
+            normalized,
+            [
+                "reporte",
+                "reportes",
+                "dashboard",
+                "metricas",
+                "grafico",
+                "graficos",
+                "powerpoint",
+                "excel",
+                "word",
+                "pdf",
+            ],
+        ):
+            return IntencionGuiaFuncionario.EXPLICAR_ACCESO_REPORTES
+
         return IntencionGuiaFuncionario.GENERAL_EMPLOYEE_HELP
+
 
     def _contains_any(self, text: str, options: list[str]) -> bool:
         return any(option in text for option in options)

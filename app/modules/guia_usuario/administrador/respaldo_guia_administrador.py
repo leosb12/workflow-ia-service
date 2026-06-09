@@ -117,6 +117,14 @@ class RespaldoGuiaAdministrador:
         }:
             return self._build_new_features_response(request, intent, issues, suggested_actions)
 
+        if intent in {
+            IntencionGuiaAdministrador.EXPLICAR_REPORTES_DINAMICOS,
+            IntencionGuiaAdministrador.GUIDE_CREATE_DYNAMIC_REPORT,
+            IntencionGuiaAdministrador.EXPLAIN_EXPORT_FORMATS,
+            IntencionGuiaAdministrador.AYUDA_REPORTES_DINAMICOS,
+        }:
+            return self._build_reports_response(request, intent, issues, suggested_actions)
+
         return RespuestaGuiaAdministrador(
             answer=self._build_general_help_answer(request),
             steps=self._build_general_help_steps(request),
@@ -134,6 +142,7 @@ class RespaldoGuiaAdministrador:
         suggested_actions: list[AccionSugerida],
     ) -> RespuestaGuiaAdministrador:
         screen = request.screen
+
         policy_name = request.context.policy_name or "esta politica"
         node_name = request.context.selected_node.name if request.context.selected_node else None
 
@@ -169,9 +178,20 @@ class RespaldoGuiaAdministrador:
                 "Entra a la seccion de seguridad.",
                 "Cambia tu contrasena si necesitas reforzar el acceso.",
             ]
+        elif screen == PantallaGuia.ADMIN_REPORTS:
+            answer = (
+                "Estas en el modulo de Reportes Inteligentes Visuales. Aqui puedes generar tableros y "
+                "dashboards dinámicos escribiendo prompts en lenguaje natural y visualizarlos en pantalla o descargarlos."
+            )
+            steps = [
+                "Escribe qué información quieres (ej: 'trámites finalizados por mes').",
+                "Presiona 'Generar Reporte' o limpia la pantalla con el botón 'Limpiar'.",
+                "Elige un formato de salida: Pantalla, PDF, Excel, Word o PowerPoint.",
+            ]
         else:
             answer = self._build_general_help_answer(request)
             steps = self._build_general_help_steps(request)
+
 
         if intent == IntencionGuiaAdministrador.GUIDE_STEP_BY_STEP:
             steps = self._build_step_by_step_flow(request)
@@ -382,6 +402,104 @@ class RespaldoGuiaAdministrador:
             severity=SeveridadGuia.INFO,
             intent=intent,
         )
+
+    def _build_reports_response(
+        self,
+        request: SolicitudGuiaAdministrador,
+        intent: IntencionGuiaAdministrador,
+        issues: list[ProblemaGuia],
+        suggested_actions: list[AccionSugerida],
+    ) -> RespuestaGuiaAdministrador:
+        screen = request.screen
+
+        if screen != PantallaGuia.ADMIN_REPORTS:
+            answer = (
+                "Para usar el módulo de Reportes Dinámicos Visuales, debes dirigirte a la pantalla de reportes. "
+                "Para llegar, dirígete al menú superior 'Analítica' y haz clic en 'Reportes Inteligentes'."
+            )
+            steps = [
+                "Ve al menú superior de administración.",
+                "Haz clic sobre la opción 'Analítica' para abrir su menú desplegable.",
+                "Selecciona 'Reportes Inteligentes' (ruta real: /admin/reportes-inteligentes).",
+                "Escribe tu prompt o instrucción en el cuadro de texto y presiona 'Generar Reporte'."
+            ]
+            return RespuestaGuiaAdministrador(
+                answer=answer,
+                steps=steps,
+                detectedIssues=issues,
+                suggestedActions=[AccionSugerida(action="NAVIGATE_TO_REPORTS", label="Ir a Reportes Inteligentes")],
+                severity=SeveridadGuia.INFO,
+                intent=intent,
+            )
+
+        if intent == IntencionGuiaAdministrador.EXPLICAR_REPORTES_DINAMICOS:
+            answer = (
+                "Los reportes dinámicos permiten al administrador generar tableros visuales, gráficos (barras, líneas, tortas, donas), "
+                "KPIs, tablas y rankings de datos estructurados simplemente escribiendo qué información necesitas en lenguaje natural."
+            )
+            steps = [
+                "Escribe en el campo de texto qué datos quieres consultar (ej: 'Monto total de pagos por mes').",
+                "Puedes presionar 'Generar Reporte' para ver los resultados en pantalla.",
+                "Interactúa con el dashboard generado o expórtalo al formato de tu preferencia."
+            ]
+        elif intent == IntencionGuiaAdministrador.GUIDE_CREATE_DYNAMIC_REPORT:
+            answer = (
+                "Para generar un reporte dinámico desde el frontend real: "
+                "1. Escribe tu instrucción en el cuadro de texto central (placeholder: 'Ej: Quiero un gráfico de barras...'). "
+                "2. (Opcional) Activa el interruptor 'IA+' para resolver nombres de funcionarios y políticas de la base de datos real. "
+                "3. Presiona el botón 'Generar Reporte' (btn-generate). "
+                "4. Si no especificaste formato en tu texto, selecciona en el modal si quieres verlo 'En Pantalla' o exportarlo."
+            )
+            steps = [
+                "Escribe tu instrucción en el cuadro de texto central.",
+                "Activa la casilla 'IA+' si deseas coincidencia exacta de datos reales.",
+                "Presiona el botón 'Generar Reporte' (btn-generate).",
+                "Selecciona el formato de visualización/exportación si el modal se abre.",
+                "Observa los bloques (gráficos, KPIs o tablas) o descarga el archivo."
+            ]
+        elif intent == IntencionGuiaAdministrador.EXPLAIN_EXPORT_FORMATS:
+            answer = (
+                "El sistema permite ver el reporte 'En Pantalla' o exportarlo a archivos locales. Los formatos disponibles son: "
+                "1. PDF (formato oscuro premium listo para imprimir usando jsPDF). "
+                "2. Excel (hoja de cálculo xlsx con tablas detalladas y gráfico incrustado usando exceljs). "
+                "3. Word (informe editable docx con los bloques usando Blob HTML). "
+                "4. PowerPoint (presentación pptx 16:9 con diapositivas y gráficos usando pptxgenjs). "
+                "Diferencia: Ver en pantalla ofrece gráficos interactivos ECharts, mientras que exportar realiza un renderizado en segundo plano "
+                "en el contenedor '#offscreen-export-container', convierte el canvas del gráfico a PNG base64 y descarga el archivo directamente."
+            )
+            steps = [
+                "Incluye el formato en tu solicitud (ej: 'en excel' o 'a PDF').",
+                "O presiona 'Generar Reporte' sin formato y selecciónalo en el diálogo emergente.",
+                "El sistema iniciará una exportación silenciosa off-screen y generará la descarga.",
+                "Guarda o abre el archivo localmente en tu computadora."
+            ]
+        elif intent == IntencionGuiaAdministrador.AYUDA_REPORTES_DINAMICOS:
+            answer = (
+                "Si la IA no entiende tu solicitud o el reporte no muestra datos: "
+                "1. Verifica que existan registros reales en la colección (ej. pagos hechos, trámites iniciados). "
+                "2. Asegúrate de usar palabras clave del catálogo permitido (ej: usuarios, trámites, pagos, tareas, predicciones, notificaciones). "
+                "3. Activa la opción 'IA+' (ia-plus-toggle) para enlazar correctamente los nombres reales. "
+                "4. Apóyate en la sección inferior de 'Sugerencias rápidas' haciendo clic en alguna de ellas."
+            )
+            steps = [
+                "Revisa si hay datos reales cargados en el sistema.",
+                "Corrige o detalla tu prompt con palabras clave del catálogo.",
+                "Activa el checkbox 'IA+' para resolver nombres de políticas/funcionarios.",
+                "Utiliza los prompts sugeridos para probar consultas predefinidas."
+            ]
+        else:
+            answer = "Estoy en la pantalla de Reportes Inteligentes. Escribe tu consulta en el cuadro de texto central para guiarte."
+            steps = ["Escribe tu solicitud", "Presiona Generar Reporte"]
+
+        return RespuestaGuiaAdministrador(
+            answer=answer,
+            steps=steps,
+            detectedIssues=issues,
+            suggestedActions=suggested_actions,
+            severity=SeveridadGuia.INFO,
+            intent=intent,
+        )
+
 
     def _build_general_help_answer(self, request: AdminGuideRequest) -> str:
         if request.screen == PantallaGuia.POLICY_DESIGNER:

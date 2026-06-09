@@ -164,7 +164,25 @@ class RespaldoGuiaUsuarioMovil:
         }:
             return self._build_new_features_response(request, intent, acciones_sugeridas)
 
+        if intent == IntencionGuiaUsuarioMovil.EXPLICAR_ACCESO_REPORTES:
+
+            return RespuestaGuiaUsuarioMovil(
+                respuesta=(
+                    "El módulo de Reportes Dinámicos y tableros inteligentes es una funcionalidad "
+                    "exclusiva para usuarios administradores. Tu rol de usuario móvil no tiene permisos "
+                    "para acceder o generar reportes."
+                ),
+                pasos=[
+                    "Revisa el estado de tus trámites desde la pantalla principal.",
+                    "Si requieres información consolidada o reportes, ponte en contacto con un administrador del sistema.",
+                ],
+                acciones_sugeridas=acciones_sugeridas[:3],
+                severity=SeveridadGuia.WARNING,
+                intencion=intent,
+            )
+
         return RespuestaGuiaUsuarioMovil(
+
             respuesta=self._build_general_help_answer(request),
             pasos=self._build_general_help_steps(request),
             estado_explicado=estado_explicado,

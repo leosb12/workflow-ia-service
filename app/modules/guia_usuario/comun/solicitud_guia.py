@@ -31,6 +31,8 @@ class PantallaGuia(str, Enum):
     PERFIL_USUARIO = "PERFIL_USUARIO"
     NOTIFICACIONES = "NOTIFICACIONES"
     GENERAL_USUARIO_MOVIL = "GENERAL_USUARIO_MOVIL"
+    ADMIN_REPORTS = "ADMIN_REPORTS"
+
 
 
 class ContextoProblemaDetectadoGuia(BaseModel):
@@ -88,6 +90,13 @@ class ContextoGuiaAdministrador(BaseModel):
     detected_issues: list[ContextoProblemaDetectadoGuia] = Field(default_factory=list, alias="detectedIssues")
     available_actions: list[str] = Field(default_factory=list, alias="availableActions")
     policy_departments: list[str] = Field(default_factory=list, alias="policyDepartments")
+    current_path: str | None = Field(default=None, alias="currentPath")
+    role: str | None = Field(default=None, alias="role")
+    screen_name: str | None = Field(default=None, alias="screenName")
+    visible_buttons: list[str] = Field(default_factory=list, alias="visibleButtons")
+    current_module: str | None = Field(default=None, alias="currentModule")
+    export_formats_available: list[str] = Field(default_factory=list, alias="exportFormatsAvailable")
+
 
 
 class SolicitudGuiaAdministrador(BaseModel):

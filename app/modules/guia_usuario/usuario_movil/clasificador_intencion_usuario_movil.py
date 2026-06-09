@@ -260,7 +260,25 @@ class ClasificadorIntencionUsuarioMovil:
         ):
             return IntencionGuiaUsuarioMovil.EXPLICAR_PRIORIDAD_INTELIGENTE
 
+        if self._contains_any(
+            normalizada,
+            [
+                "reporte",
+                "reportes",
+                "dashboard",
+                "metricas",
+                "grafico",
+                "graficos",
+                "powerpoint",
+                "excel",
+                "word",
+                "pdf",
+            ],
+        ):
+            return IntencionGuiaUsuarioMovil.EXPLICAR_ACCESO_REPORTES
+
         return IntencionGuiaUsuarioMovil.AYUDA_GENERAL_USUARIO_MOVIL
+
 
     def _contains_any(self, text: str, options: list[str]) -> bool:
         return any(option in text for option in options)
