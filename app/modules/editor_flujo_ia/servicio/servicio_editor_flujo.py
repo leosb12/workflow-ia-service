@@ -1222,7 +1222,15 @@ class ServicioEditorFlujoIa:
             return "text"
         if "fecha" in normalized:
             return "date"
-        if any(token in normalized for token in ["booleano", "checkbox", "si no", "si/no", "verdadero", "falso"]):
+        if any(token in normalized for token in ["checkbox", "casilla", "verificacion"]):
+            return "checkbox"
+        if any(token in normalized for token in ["seleccion", "select", "combo", "desplegable", "combobox"]):
+            return "select"
+        if any(token in normalized for token in ["grid", "matriz", "tabla", "tabular"]):
+            return "grid"
+        if any(token in normalized for token in ["textarea", "area de texto", "texto largo", "descripcion larga"]):
+            return "textarea"
+        if any(token in normalized for token in ["booleano", "si no", "si/no", "verdadero", "falso"]):
             return "boolean"
         return "text"
 

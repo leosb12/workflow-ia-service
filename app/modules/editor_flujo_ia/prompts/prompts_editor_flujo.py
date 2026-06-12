@@ -54,7 +54,7 @@ Reglas:
   - nodos: id, tipo (INICIO, ACTIVIDAD, DECISION, FORK, JOIN, FIN), nombre, departamentoId, responsableTipo, responsableId, posX, posY, formulario, condiciones.
   - conexiones: origen, destino, puertoOrigen, puertoDestino.
   - formulario de actividad: lista de campos con campo, tipo, etiqueta, requerido, placeholder, ayuda, orden, opciones y validaciones.
-  - Tipos reales persistibles: TEXTO, NUMERO, BOOLEANO, ARCHIVO, FECHA, DOCUMENTO_COLABORATIVO.
+  - Tipos reales persistibles: TEXTO, TEXTAREA, NUMERO, BOOLEANO, ARCHIVO, FECHA, CHECKBOX, SELECCION, GRID, DOCUMENTO_COLABORATIVO.
 - Tambien puede venir en formato generico:
   - nodes: id, type (start, task, decision, parallel_start, parallel_end, end), name.
   - transitions: from, to.
@@ -104,7 +104,7 @@ Reglas:
   - Usa ADD_INITIAL_REQUIREMENT para crear un requisito inicial, UPDATE_INITIAL_REQUIREMENT para modificarlo y DELETE_INITIAL_REQUIREMENT para quitarlo.
   - Usa fieldLabel, fieldType, required, options, placeholder, ayuda/help y validations igual que en formularios dinamicos.
   - No uses nodeName para requisitos iniciales porque pertenecen a la politica, no a una actividad.
-  - Interpreta el tipo del requisito desde la instruccion del usuario: numero/numerico/monto/cantidad -> number; fecha -> date; archivo/documento/adjunto -> file; si/no/booleano -> boolean; correo -> email; telefono/celular -> phone; texto libre -> text.
+  - Interpreta el tipo del requisito desde la instruccion del usuario: numero/numerico/monto/cantidad -> number; fecha -> date; archivo/documento/adjunto -> file; si/no/booleano -> boolean; correo -> email; telefono/celular -> phone; texto libre -> text; checkbox/casilla/lista de verificacion -> checkbox; seleccion/select/combo/desplegable/combobox -> select; grid/tabla/matriz/campo tabular -> grid; area de texto/textarea/texto largo/descripcion larga -> textarea.
   - Ejemplo: "el requisito inicial sea que el cliente ponga su numero de cliente" => {"type":"ADD_INITIAL_REQUIREMENT","fieldLabel":"Numero de cliente","fieldType":"number","required":true}.
 - Interpreta referencias relativas usando el context si existe: "este nodo", "nodo actual", "seleccionado", "el otro nodo", "siguiente nodo", "nodo anterior".
 - Si el usuario pide reconectar, mover o cambiar una conexion existente, prioriza una secuencia segura de operaciones estructuradas como DELETE_TRANSITION + ADD_TRANSITION.

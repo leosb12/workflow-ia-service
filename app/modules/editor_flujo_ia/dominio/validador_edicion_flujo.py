@@ -48,6 +48,13 @@ class ValidadorEdicionFlujo:
         "ARCHIVO",
         "FECHA",
         "DOCUMENTO_COLABORATIVO",
+        "grid",
+        "GRID",
+        "checkbox",
+        "CHECKBOX",
+        "seleccion",
+        "SELECCION",
+        "TEXTAREA",
     }
 
     def validar(
