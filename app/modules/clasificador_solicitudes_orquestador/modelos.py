@@ -43,6 +43,7 @@ class IaClasificacionRequest(BaseModel):
     politicas: list[PoliticaClasificacionDto] = Field(min_length=1)
     usarDeepSeek: bool = False
     nombreDocumento: str | None = None
+    usarSoloRequisitosIniciales: bool = False
 
     model_config = ConfigDict(extra="ignore")
 

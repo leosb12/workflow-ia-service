@@ -17,13 +17,16 @@ class ClienteDeepLearningClasificador:
         self.base_url = settings.ia_deep_learning_service_url.strip().rstrip("/")
         self.timeout = 30.0
 
-    async def clasificar(self, request: IaClasificacionRequest) -> IaClasificacionResponse:
+    async def clasificar(self, request: IaClasificacionRequest, ai_mode: str | None = None) -> IaClasificacionResponse:
         url = f"{self.base_url}/api/deep-learning/clasificador-solicitudes/clasificar-dinamico"
         payload = request.model_dump(by_alias=True)
+        headers = {}
+        if ai_mode:
+            headers["X-AI-Mode"] = ai_mode
 
         try:
             async with httpx.AsyncClient(timeout=self.timeout) as client:
-                response = await client.post(url, json=payload)
+                response = await client.post(url, json=payload, headers=headers)
                 response.raise_for_status()
         except httpx.HTTPStatusError as exc:
             log.warning(
